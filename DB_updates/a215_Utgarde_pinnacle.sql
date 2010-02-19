@@ -6,12 +6,32 @@ UPDATE `creature_template` SET `InhabitType` = '3', `unit_flags` = '0', `mindmg`
 -- Utgarde Pinnacle::svala ritual channelerer
 UPDATE `creature_template` SET `faction_A` = '21', `faction_H` = '21', `minlevel` = '80', `maxlevel` = '80', `minhealth` = '8121', `maxhealth` = '8121', `minmana` = '15976', `maxmana` = '15976',`AIName` = '', `Scriptname` = 'npc_svala_channeler' WHERE `entry` IN (27281);
 UPDATE `creature_template` SET `faction_A` = '21', `faction_H` = '21', `minlevel` = '81', `maxlevel` = '81', `minhealth` = '13033', `maxhealth` = '13033', `minmana` = '16324', `maxmana` = '16324' WHERE `entry` IN (30804);
--- Utgarde Pinnacle::Skadi harpoonlancher
-UPDATE gameobject_template SET ScriptName = 'go_skaldi_harpoonluncher' WHERE entry IN (192175,192176,192177);
+-- Rital Target 
+UPDATE creature_template SET
+flags_extra = flags_extra |2
+WHERE entry IN (27327, 30805);
+
+-- Summon Channelers
+DELETE FROM spell_target_position WHERE id IN (48271,48274,48275,48276,48267,48331);
+INSERT INTO spell_target_position VALUES
+(48271, 575, 291.18, -351.37, 90.54, 0.69), -- Summon Channeler 1
+(48274, 575, 296.94, -354.62, 90.94, 1.63), -- Summon Channeler 2
+(48275, 575, 301.77, -351.11, 90.54, 2.66), -- Summon Channeler 3
+(48276, 575, 296.63, -346.07, 101.5, 4.60), -- Ritual of Sword - releport Svala
+(48267, 575, 296.63, -346.07, 90.54, 4.60), -- Ritual of Proparation - teleport player
+(48331, 575, 296.63, -346.07, 90.54, 4.60);
+
+-- Ritual Strike hit on Ritual Target
+DELETE FROM spell_script_target WHERE entry IN (48331,48277);
+INSERT INTO spell_script_target VALUES
+(48277, 1, 27327),
+(48331, 1, 27327);
 
 
 -- Utgarde Pinnacle::Grouf not used in event for  now
 -- DELETE FROM creature WHERE id = '26893';
+-- Utgarde Pinnacle::Skadi harpoonlancher
+UPDATE gameobject_template SET ScriptName = 'go_skaldi_harpoonluncher' WHERE entry IN (192175,192176,192177);
 
 -- Skadi the Ruthless(N)
 UPDATE `creature_template` SET `mechanic_immune_mask` = mechanic_immune_mask|1073463287, `AIName` = '', `Scriptname` = 'boss_skadi' WHERE `entry` IN (26693);

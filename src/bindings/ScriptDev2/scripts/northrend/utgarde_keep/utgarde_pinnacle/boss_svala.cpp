@@ -54,7 +54,13 @@ enum
     SPELL_TRANSFORMING_FLOATING = 54140,
     SPELL_TRANSFORMING_CHANNEL  = 54142,
 
+    SPELL_SUMMON_CHANNELER_1    = 48271,
+    SPELL_SUMMON_CHANNELER_2    = 48274,
+    SPELL_SUMMON_CHANNELER_3    = 48275,
+
     SPELL_RITUAL_OF_SWORD       = 48276,
+    SPELL_RITUAL_OF_PREPARATION = 48267,
+    SPELL_RITUAL_STRIKE         = 48277,
     SPELL_CALL_FLAMES           = 48258,
     SPELL_BOLT                  = 39252,
     SPELL_SINISTER_STRIKE       = 15667,
@@ -66,13 +72,7 @@ enum
     SPELL_SHADOWS               = 59407,
 };
 
-float fCoord[4][4] =
-{
-    {296.498169f, -346.462433f, 90.547546f, 0.0f}, 
-    {299.563782f, -343.736572f, 90.559288f, 3.93f}, 
-    {293.811676f, -343.331238f, 90.529503f, 5.340091f}, 
-    {296.490417f, -349.221039f, 90.5550446f, 1.578029f} 
-};
+float fCoord[4] = {296.498169f, -346.462433f, 90.547546f, 0.0f};
 
 /*######
 ## boss_svala
@@ -89,6 +89,8 @@ struct MANGOS_DLL_DECL boss_svalaAI : public ScriptedAI
     }
 
     ScriptedInstance* m_pInstance;
+
+    std::list<uint64> lChannelers;
     bool m_bIsRegularMode;
 
     Creature* pArthas;
@@ -104,14 +106,10 @@ struct MANGOS_DLL_DECL boss_svalaAI : public ScriptedAI
     uint32 m_uiSacrificeEndTimer;
 
     uint64 m_uiPlayerGUID;
-    uint64 m_uiAddsGUID[3];
 
     void Reset()
     {
         m_uiPlayerGUID;
-        for(uint8 i=0; i<3; ++i)
-            m_uiAddsGUID[i] = 0;
-
         m_bIsSacrifice = false;
         m_uiSinisterStrikeTimer = urand(10000,20000);
         m_uiCallFlamesTimer = urand(15000,25000);
@@ -170,12 +168,32 @@ struct MANGOS_DLL_DECL boss_svalaAI : public ScriptedAI
 
     void JustSummoned(Creature* pSummoned)
     {
-        if (pSummoned->GetEntry() == NPC_ARTHAS_IMAGE)
+        switch(pSummoned->GetEntry())
         {
-            pSummoned->CastSpell(pSummoned, SPELL_ARTHAS_VISUAL, true);
-            pArthas = pSummoned;
-            pSummoned->SetFacingToObject(m_creature);
+            case NPC_ARTHAS_IMAGE:
+                pSummoned->CastSpell(pSummoned, SPELL_ARTHAS_VISUAL, true);
+                pArthas = pSummoned;
+                pSummoned->SetFacingToObject(m_creature);
+                break;
+            case NPC_CHANNELER:
+                if (Player* pPlayer = (Player*)Unit::GetUnit((*pSummoned),m_uiPlayerGUID))
+                    pSummoned->CastSpell(pPlayer, SPELL_PARALYZE, false);
+                lChannelers.push_back(pSummoned->GetGUID());
+                break;
         }
+    }
+
+    void CleanupChannelers()
+    {
+        if (!lChannelers.empty())
+        {
+            for (std::list<uint64>::iterator itr = lChannelers.begin(); itr != lChannelers.end(); ++itr)
+            {
+                if (Creature* pChanneler = (Creature*)Unit::GetUnit((*m_creature), *itr))
+                    pChanneler->ForcedDespawn();
+            }
+        }
+        lChannelers.clear();
     }
 
     void SummonedCreatureDespawn(Creature* pDespawned)
@@ -260,7 +278,7 @@ struct MANGOS_DLL_DECL boss_svalaAI : public ScriptedAI
                         case 5:
                             DoScriptText(SAY_INTRO_5, m_creature);
                             m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                             m_creature->GetMap()->CreatureRelocation(m_creature, fCoord[0][0], fCoord[0][1], fCoord[0][2], m_creature->GetOrientation());
+                             m_creature->GetMap()->CreatureRelocation(m_creature, fCoord[0], fCoord[1], fCoord[2], m_creature->GetOrientation());
                             m_bIsIntroDone = true;
                             break;
                     }
@@ -276,29 +294,11 @@ struct MANGOS_DLL_DECL boss_svalaAI : public ScriptedAI
 
         if(m_uiSacrificeEndTimer < uiDiff && m_bIsSacrifice)
         {
-            for(uint8 i=0; i<3; ++i)
-            {
-                Unit* pAdd = Unit::GetUnit(*m_creature, m_uiAddsGUID[i]);
-                if(pAdd && pAdd->isAlive())
-                {
-                    Unit* pPlayer = Unit::GetUnit(*m_creature, m_uiPlayerGUID);
-                    if(pPlayer)
-                        m_creature->CastSpell(pPlayer, SPELL_KILL, false);
+            if (Player* pPlayer = (Player*)Unit::GetUnit((*m_creature), m_uiPlayerGUID))
+                if (pPlayer->HasAura(SPELL_PARALYZE))
+                    m_creature->CastSpell(pPlayer, SPELL_KILL, false);
 
-                    for(uint8 k=0; k<3; ++k)
-                    {
-                        Unit* pAdd = Unit::GetUnit(*m_creature, m_uiAddsGUID[i]);
-                        if(pAdd && pAdd->isAlive())
-                        {
-                            pAdd->SetVisibility(VISIBILITY_OFF);
-                            pAdd->setFaction(35);
-                        }
-                        m_uiAddsGUID[k] = 0;
-                    }
-                    m_bIsSacrifice = false;
-                    return;
-                }
-            }
+            CleanupChannelers();
             m_uiPlayerGUID = 0;
             m_bIsSacrifice = false;
         }else m_uiSacrificeEndTimer -= uiDiff;
@@ -325,20 +325,23 @@ struct MANGOS_DLL_DECL boss_svalaAI : public ScriptedAI
         if(m_uiSacrificeTimer < uiDiff)
         {
             m_uiPlayerGUID = 0;
-            if(Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
+            if(Unit* pUnit = SelectUnit(SELECT_TARGET_RANDOM,0))
             {
-                m_uiPlayerGUID = pPlayer->GetGUID();
-                DoTeleportPlayer(pPlayer, fCoord[0][0], fCoord[0][1], fCoord[0][2], pPlayer->GetOrientation());
-                m_uiSacrificeEndTimer = 8000;
-
-                for(uint8 i=0; i<3; ++i)
-                    if(Creature* pAdd = m_creature->SummonCreature(NPC_CHANNELER, fCoord[i][0], fCoord[i][1], fCoord[i][2], fCoord[i][3], TEMPSUMMON_TIMED_DESPAWN, 9000))
-                    {
-                        m_uiAddsGUID[i] = pAdd->GetGUID();
-                        pAdd->AI()->AttackStart(pPlayer);
-                        pAdd->CastSpell(pPlayer, SPELL_PARALYZE, false);
-                    }
+                if (Player* pPlayer = pUnit->GetCharmerOrOwnerPlayerOrPlayerItself())
+                {
+                    m_uiPlayerGUID = pPlayer->GetGUID();
+                    m_creature->InterruptNonMeleeSpells(false);
+                    DoCast(m_creature, SPELL_RITUAL_OF_SWORD, false);
+                    pPlayer->InterruptNonMeleeSpells(false);
+                    pPlayer->CastSpell(pPlayer, SPELL_RITUAL_OF_PREPARATION, false);
+                    m_uiSacrificeEndTimer = 8000;
+                }
             }
+
+            DoCast(m_creature, SPELL_SUMMON_CHANNELER_1, true);
+            DoCast(m_creature, SPELL_SUMMON_CHANNELER_2, true);
+            DoCast(m_creature, SPELL_SUMMON_CHANNELER_3, true);
+
             m_bIsSacrifice = true;
             m_uiSacrificeTimer = 20000;
         }else m_uiSacrificeTimer -= uiDiff;
