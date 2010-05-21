@@ -30,8 +30,8 @@
 #include "SystemConfig.h"
 #include "revision.h"
 #include "revision_nr.h"
-#include "revision_andeeria_nr.h"
 #include "revision_sql.h"
+#include "revision_andeeria_nr.h"
 #include "Util.h"
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
@@ -60,9 +60,6 @@ void UnhookSignals();
 void HookSignals();
 
 bool stopEvent = false;                                     ///< Setting it to true stops the server
-
-uint32 m_AccountBanDelay = 0;
-time_t m_AccountBanNext = time(NULL);
 
 DatabaseType loginDatabase;                                 ///< Accessor to the realm server database
 
@@ -235,13 +232,11 @@ extern int main(int argc, char **argv)
 
     if(acceptor.open(bind_addr, ACE_Reactor::instance(), ACE_NONBLOCK) == -1)
     {
-        sLog.outError( "MaNGOS realmd can not bind to %s:%d",bind_ip.c_str(), rmport );
+        sLog.outError("MaNGOS realmd can not bind to %s:%d", bind_ip.c_str(), rmport);
         Log::WaitBeforeContinueIfNeed();
         return 1;
     }
 
-    m_AccountBanDelay = sConfig.GetIntDefault( "AccountBanUpdateDelay", 20);
-    m_AccountBanNext  = time(NULL) + m_AccountBanDelay;
     ///- Catch termination signals
     HookSignals();
 
@@ -297,14 +292,9 @@ extern int main(int argc, char **argv)
     {
         // dont move this outside the loop, the reactor will modify it
         ACE_Time_Value interval(0, 100000);
-        
-        if(m_AccountBanDelay > 0 && m_AccountBanNext < time(NULL)){
-            sLog.outDetail("Delete old account ban...");
-            loginDatabase.Execute("UPDATE account_banned SET active = 0 WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");
-            loginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");
 
-            m_AccountBanNext = time(NULL) + m_AccountBanDelay;
-        }
+        if (ACE_Reactor::instance()->run_reactor_event_loop(interval) == -1)
+            break;
 
         if( (++loopCounter) == numLoops )
         {
