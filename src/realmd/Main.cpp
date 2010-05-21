@@ -26,7 +26,6 @@
 
 #include "Config/ConfigEnv.h"
 #include "Log.h"
-#include "sockets/ListenSocket.h"
 #include "AuthSocket.h"
 #include "SystemConfig.h"
 #include "revision.h"
@@ -36,6 +35,11 @@
 #include "Util.h"
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
+
+#include <ace/Dev_Poll_Reactor.h>
+#include <ace/ACE.h>
+#include <ace/Acceptor.h>
+#include <ace/SOCK_Acceptor.h>
 
 #ifdef WIN32
 #include "ServiceWin32.h"
@@ -177,6 +181,14 @@ extern int main(int argc, char **argv)
         DETAIL_LOG("WARNING: Minimal required version [OpenSSL 0.9.8k]");
     }
 
+    DETAIL_LOG("Using ACE: %s", ACE_VERSION);
+
+#if defined (ACE_HAS_EVENT_POLL) || defined (ACE_HAS_DEV_POLL)
+    ACE_Reactor::instance(new ACE_Reactor(new ACE_Dev_Poll_Reactor(ACE::max_handles(), 1), 1), true);
+#endif
+
+    sLog.outBasic("Max allowed open files is %d", ACE::max_handles());
+
     /// realmd PID file creation
     std::string pidfile = sConfig.GetStringDefault("PidFile", "");
     if(!pidfile.empty())
@@ -208,13 +220,20 @@ extern int main(int argc, char **argv)
         return 1;
     }
 
+    // cleanup query
+    // set expired bans to inactive
+    loginDatabase.Execute("UPDATE account_banned SET active = 0 WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");
+    loginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");
+
     ///- Launch the listening network socket
-    port_t rmport = sConfig.GetIntDefault( "RealmServerPort", DEFAULT_REALMSERVER_PORT );
+    ACE_Acceptor<AuthSocket, ACE_SOCK_Acceptor> acceptor;
+
+    uint16 rmport = sConfig.GetIntDefault("RealmServerPort", DEFAULT_REALMSERVER_PORT);
     std::string bind_ip = sConfig.GetStringDefault("BindIP", "0.0.0.0");
 
-    SocketHandler h;
-    ListenSocket<AuthSocket> authListenSocket(h);
-    if ( authListenSocket.Bind(bind_ip.c_str(),rmport))
+    ACE_INET_Addr bind_addr(rmport, bind_ip.c_str());
+
+    if(acceptor.open(bind_addr, ACE_Reactor::instance(), ACE_NONBLOCK) == -1)
     {
         sLog.outError( "MaNGOS realmd can not bind to %s:%d",bind_ip.c_str(), rmport );
         Log::WaitBeforeContinueIfNeed();
@@ -223,9 +242,6 @@ extern int main(int argc, char **argv)
 
     m_AccountBanDelay = sConfig.GetIntDefault( "AccountBanUpdateDelay", 20);
     m_AccountBanNext  = time(NULL) + m_AccountBanDelay;
-
-    h.Add(&authListenSocket);
-
     ///- Catch termination signals
     HookSignals();
 
@@ -279,6 +295,8 @@ extern int main(int argc, char **argv)
     ///- Wait for termination signal
     while (!stopEvent)
     {
+        // dont move this outside the loop, the reactor will modify it
+        ACE_Time_Value interval(0, 100000);
         
         if(m_AccountBanDelay > 0 && m_AccountBanNext < time(NULL)){
             sLog.outDetail("Delete old account ban...");
@@ -287,8 +305,6 @@ extern int main(int argc, char **argv)
 
             m_AccountBanNext = time(NULL) + m_AccountBanDelay;
         }
-
-        h.Select(0, 100000);
 
         if( (++loopCounter) == numLoops )
         {
