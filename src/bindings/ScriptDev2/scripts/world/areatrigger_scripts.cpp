@@ -36,7 +36,7 @@ EndContentData */
 uint32 TriggerOrphanSpell[6][3] =
 {
     {3546, 14305, 65056},   // The Bough of the Eternals
-    {3547, 14444, 65059},   // Lordaeron Throne Room 
+    {3547, 14444, 65059},   // Lordaeron Throne Room
     {3548, 14305, 65055},   // The Stonewrought Dam
     {3549, 14444, 65058},   // Gateway to the Frontier
     {3550, 14444, 65057},   // Down at the Docks
@@ -50,7 +50,7 @@ bool AreaTrigger_at_childrens_week_spot(Player* pPlayer, AreaTriggerEntry* pAt)
         if (pAt->id == TriggerOrphanSpell[i][0] &&
             pPlayer->GetMiniPet() && pPlayer->GetMiniPet()->GetEntry() == TriggerOrphanSpell[i][1])
         {
-            pPlayer->CastSpell(pPlayer, TriggerOrphanSpell[i][2], true); 
+            pPlayer->CastSpell(pPlayer, TriggerOrphanSpell[i][2], true);
             return true;
         }
     }

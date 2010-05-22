@@ -257,6 +257,9 @@ scripts/kalimdor/winterspring.cpp \
 scripts/kalimdor/blackfathom_deeps/blackfathom_deeps.h \
 scripts/kalimdor/blackfathom_deeps/blackfathom_deeps.cpp \
 scripts/kalimdor/blackfathom_deeps/instance_blackfathom_deeps.cpp \
+scripts/kalimdor/caverns_of_time/culling_of_stratholme/culling_of_stratholme.h \
+scripts/kalimdor/caverns_of_time/culling_of_stratholme/culling_of_stratholme.cpp \
+scripts/kalimdor/caverns_of_time/culling_of_stratholme/instance_culling_of_stratholme.cpp \
 scripts/kalimdor/caverns_of_time/dark_portal/boss_aeonus.cpp \
 scripts/kalimdor/caverns_of_time/dark_portal/boss_chrono_lord_deja.cpp \
 scripts/kalimdor/caverns_of_time/dark_portal/boss_temporus.cpp \
@@ -292,6 +295,8 @@ scripts/kalimdor/maraudon/boss_princess_theradras.cpp \
 scripts/kalimdor/onyxias_lair/boss_onyxia.cpp \
 scripts/kalimdor/razorfen_downs/boss_amnennar_the_coldbringer.cpp \
 scripts/kalimdor/razorfen_downs/razorfen_downs.cpp \
+scripts/kalimdor/razorfen_kraul/instance_razorfen_kraul.cpp \
+scripts/kalimdor/razorfen_kraul/razorfen_kraul.h \
 scripts/kalimdor/ruins_of_ahnqiraj/boss_ayamiss.cpp \
 scripts/kalimdor/ruins_of_ahnqiraj/boss_buru.cpp \
 scripts/kalimdor/ruins_of_ahnqiraj/boss_kurinnaxx.cpp \

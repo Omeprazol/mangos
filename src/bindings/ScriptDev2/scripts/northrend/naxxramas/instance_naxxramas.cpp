@@ -372,8 +372,6 @@ void instance_naxxramas::SetData(uint32 uiType, uint32 uiData)
             break;
         case TYPE_RAZUVIOUS:
             m_auiEncounter[6] = uiData;
-            if (uiData == DONE)
-                SwitchDoor(uiData, m_uiGothikEntryDoorGUID);
             break;
         case TYPE_GOTHIK:
             switch(uiData)
