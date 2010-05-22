@@ -543,9 +543,7 @@ void Spell::FillTargetMap()
                         // Note: this hack with search required until GO casting not implemented
                         // environment damage spells already have around enemies targeting but this not help in case not existed GO casting support
                         // currently each enemy selected explicitly and self cast damage
-                        if (m_spellInfo->Effect[i] == SPELL_EFFECT_ENVIRONMENTAL_DAMAGE
-                            // Paralyze - Svala channellers
-                            || m_spellInfo->Id == 48278)
+                        if (m_spellInfo->Effect[i] == SPELL_EFFECT_ENVIRONMENTAL_DAMAGE)
                         {
                             if(m_targets.getUnitTarget())
                                 tmpUnitMap.push_back(m_targets.getUnitTarget());
@@ -559,47 +557,6 @@ void Spell::FillTargetMap()
                     case 0:
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
                         tmpUnitMap.push_back(m_caster);
-                        break;
-                    case TARGET_AREAEFFECT_INSTANT:
-                        switch(m_spellInfo->Id)
-                        {
-                            case 10252:
-                                SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
-                                if (!tmpUnitMap.empty())
-                                {
-                                    for (std::list<Unit*>::iterator itr = tmpUnitMap.begin(); itr != tmpUnitMap.end();)
-                                        {
-                                            if ((*itr)->GetEntry() != 7076)
-                                            {
-                                                itr = tmpUnitMap.erase(itr);
-                                                continue;
-                                            }
-                                            else 
-                                                ++itr;
-                                        }
-                                }
-                                break;
-                            case 10258:
-                                SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
-                                if (!tmpUnitMap.empty())
-                                {
-                                    for (std::list<Unit*>::iterator itr = tmpUnitMap.begin(); itr != tmpUnitMap.end();)
-                                        {
-                                            if ((*itr)->GetEntry() != 10120)
-                                            {
-                                                itr = tmpUnitMap.erase(itr);
-                                                continue;
-                                            }
-                                            else 
-                                                ++itr;
-                                        }
-                                }
-                                break;
-                            default:
-                                SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
-                                SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
-                                break;
-                        }
                         break;
 
                     default:
