@@ -238,7 +238,7 @@ struct MANGOS_DLL_DECL boss_skeramAI : public ScriptedAI
                 break;
         }
 
-        for (int tryi = 0; tryi < 41; ++tryi)
+        /*for (int tryi = 0; tryi < 41; ++tryi)
         {
             Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0);
             if (pTarget && pTarget->GetTypeId() == TYPEID_PLAYER)
@@ -254,7 +254,7 @@ struct MANGOS_DLL_DECL boss_skeramAI : public ScriptedAI
                 }
                 break;
             }
-        }
+        }*/
 
         m_creature->RemoveAllAuras();
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
