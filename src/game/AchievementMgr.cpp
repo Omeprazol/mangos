@@ -1547,13 +1547,11 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                     }
                     case 122:                           // AB, assault a base
                     {
-                        error_log("ide tedy 1");
                         if(bg->GetTypeID() != BATTLEGROUND_AB)
                             continue;
                         
                         if(miscvalue2 == 1)
                             continue;
-                        error_log("ide tedy 2");
 
                         break;
                     }
