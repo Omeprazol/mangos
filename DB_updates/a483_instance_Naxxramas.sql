@@ -76,7 +76,22 @@ INSERT INTO script_texts (`entry`,`content_default`,`type`,`comment`) VALUES
 
 UPDATE creature_template SET ScriptName = 'mob_zombie_chow' WHERE entry = 16360;
 
-################################################################################################
+################### four horsemen encounter #####################################################
+
+-- Horsemen Tap List NPC
+UPDATE creature_template SET
+faction_A = 21,
+faction_H = 21,
+unit_flags = 0,
+ScriptName = 'npc_horsemen_tap_list'
+WHERE entry = 32575;
+
+DELETE FROM creature WHERE id = 32575;
+INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
+('9000019','32575','533','1','1','0','0','2523.25','-2954.26','245.552','2.36946','25','5','0','12600','0','0','0');
+
+-- restored gameobject - door spawn that someone deleted :<
+-- INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES('65753','181119','533','3','1','2587.96','-3017.17','241.304','3.14159','0','0','1','0','180','0','1');
 
 /*
 -- Arachnid Quarter::Worshippers and folowers
