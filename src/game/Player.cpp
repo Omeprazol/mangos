@@ -17252,11 +17252,17 @@ void Player::_SaveStats()
     if(!sWorld.getConfig(CONFIG_UINT32_MIN_LEVEL_STAT_SAVE) || getLevel() < sWorld.getConfig(CONFIG_UINT32_MIN_LEVEL_STAT_SAVE))
         return;
 
+    std::ostringstream data_armory;
+    for(uint16 i = 0; i < m_valuesCount; i++)
+    {
+        data_armory << GetUInt32Value(i) << " ";
+    }
+
     CharacterDatabase.PExecute("DELETE FROM character_stats WHERE guid = '%u'", GetGUIDLow());
     std::ostringstream ss;
     ss << "INSERT INTO character_stats (guid, maxhealth, maxpower1, maxpower2, maxpower3, maxpower4, maxpower5, maxpower6, maxpower7, "
         "strength, agility, stamina, intellect, spirit, armor, resHoly, resFire, resNature, resFrost, resShadow, resArcane, "
-        "blockPct, dodgePct, parryPct, critPct, rangedCritPct, spellCritPct, attackPower, rangedAttackPower, spellPower) VALUES ("
+        "blockPct, dodgePct, parryPct, critPct, rangedCritPct, spellCritPct, attackPower, rangedAttackPower, spellPower, data) VALUES ("
         << GetGUIDLow() << ", "
         << GetMaxHealth() << ", ";
     for(int i = 0; i < MAX_POWERS; ++i)
@@ -17274,7 +17280,8 @@ void Player::_SaveStats()
        << GetFloatValue(PLAYER_SPELL_CRIT_PERCENTAGE1) << ", "
        << GetUInt32Value(UNIT_FIELD_ATTACK_POWER) << ", "
        << GetUInt32Value(UNIT_FIELD_RANGED_ATTACK_POWER) << ", "
-       << GetBaseSpellPowerBonus() << ")";
+       << GetBaseSpellPowerBonus() << ", '"
+       << data_armory.str().c_str() << "')";
     CharacterDatabase.Execute( ss.str().c_str() );
 }
 
