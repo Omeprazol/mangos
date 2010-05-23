@@ -68,7 +68,7 @@ enum
 
 #define GOSSIP_ITEM_BEGIN   "Let the event begin!"
 
-float Position [10][3] =
+float PointCoord [10][3] =
 {
     {-33.5f, 243.3f, -93.6f},
     {-61.5f, 296.6f, -89.8f},
@@ -237,7 +237,7 @@ struct MANGOS_DLL_DECL npc_disciple_of_naralexAI : public npc_escortAI
                 case 2:
                     for (int i=0; i <3; ++i)
                     {
-                        SummonAttacker(MOB_DEVIATE_VIPER,Position[i][0],Position[i][1],Position[i][2]);
+                        SummonAttacker(MOB_DEVIATE_VIPER,PointCoord[i][0],PointCoord[i][1],PointCoord[i][2]);
                     }
                     Subevent_Phase = 3;
                     Event_Timer = 2000;
@@ -283,7 +283,7 @@ struct MANGOS_DLL_DECL npc_disciple_of_naralexAI : public npc_escortAI
                 case 3:
                     for (int i = 3; i <6; ++i)
                     {
-                        SummonAttacker(MOB_DEVIATE_MOCCASIN, Position[i][0],Position[i][1],Position[i][2]);
+                        SummonAttacker(MOB_DEVIATE_MOCCASIN, PointCoord[i][0],PointCoord[i][1],PointCoord[i][2]);
                     }
                     Event_Timer = 40000;
                     Subevent_Phase = 4;
@@ -291,7 +291,7 @@ struct MANGOS_DLL_DECL npc_disciple_of_naralexAI : public npc_escortAI
                 case 4:
                     for (int i = 3; i <10; ++i)
                     {
-                        SummonAttacker(MOB_NIGHTMARE_ECTOPLASM, Position[i][0],Position[i][1],Position[i][2]);
+                        SummonAttacker(MOB_NIGHTMARE_ECTOPLASM, PointCoord[i][0],PointCoord[i][1],PointCoord[i][2]);
                     }
                     Event_Timer = 40000;
                     Subevent_Phase = 5;
@@ -303,7 +303,7 @@ struct MANGOS_DLL_DECL npc_disciple_of_naralexAI : public npc_escortAI
                      DoScriptText(SAY_BEFORE_MUTANOUS,m_creature);
                      break;
                 case 6:
-                    SummonAttacker(MOB_MUTANOUS_DEVOURER, Position[4][0],Position[4][1],Position[4][2]);
+                    SummonAttacker(MOB_MUTANOUS_DEVOURER, PointCoord[4][0],PointCoord[4][1],PointCoord[4][2]);
                     Subevent_Phase = 7;
                     Event_Timer = 2000;
                     break;
@@ -343,8 +343,8 @@ struct MANGOS_DLL_DECL npc_disciple_of_naralexAI : public npc_escortAI
                     Subevent_Phase = 11;
                     break;
                 case 11:
-                    m_creature->SendMonsterMove(Position[9][0], Position[9][1], Position[9][2], SPLINETYPE_NORMAL, SPLINEFLAG_FLYING, 5000);
-                    Naralex->SendMonsterMove(Position[9][0], Position[9][1], Position[9][2], SPLINETYPE_NORMAL, SPLINEFLAG_FLYING, 5000);
+                    m_creature->SendMonsterMove(PointCoord[9][0], PointCoord[9][1], PointCoord[9][2], SPLINETYPE_NORMAL, SPLINEFLAG_FLYING, 5000);
+                    Naralex->SendMonsterMove(PointCoord[9][0], PointCoord[9][1], PointCoord[9][2], SPLINETYPE_NORMAL, SPLINEFLAG_FLYING, 5000);
                     Event_Timer = 5000;
                     Subevent_Phase = 12;
                     break;
