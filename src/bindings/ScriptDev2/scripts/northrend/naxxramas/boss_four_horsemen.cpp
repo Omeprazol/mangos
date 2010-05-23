@@ -234,22 +234,6 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
         }
     }
 
-    void MovementInform(uint32 uiMoveType, uint32 uiPointId)
-    {
-        if (uiMoveType != POINT_MOTION_TYPE)
-            return;
-
-        if (uiPointId == CORNER_POINT)
-        {
-            SetCombatMovement(true);
-            if (Unit* pUnit = m_creature->getVictim())
-            {
-                m_creature->GetMotionMaster()->Clear(true, true);
-                m_creature->GetMotionMaster()->MoveChase(pUnit);
-            }
-        }
-    }
-
     void KilledUnit(Unit* pVictim)
     {
         DoScriptText(SAY_BLAU_SLAY, m_creature);
@@ -322,8 +306,6 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
         }
         else
             m_uiShadowBoltTimer -= uiDiff;
-
-        DoMeleeAttackIfReady();
     }
 };
 
@@ -598,22 +580,6 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
         }
     }
 
-    void MovementInform(uint32 uiMoveType, uint32 uiPointId)
-    {
-        if (uiMoveType != POINT_MOTION_TYPE)
-            return;
-
-        if (uiPointId == CORNER_POINT)
-        {
-            SetCombatMovement(true);
-            if (Unit* pUnit = m_creature->getVictim())
-            {
-                m_creature->GetMotionMaster()->Clear(true, true);
-                m_creature->GetMotionMaster()->MoveChase(pUnit);
-            }
-        }
-    }
-
     void KilledUnit(Unit* pVictim)
     {
         DoScriptText(SAY_ZELI_SLAY, m_creature);
@@ -687,8 +653,6 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
         }
         else
             m_uiHolyBoltTimer -= uiDiff;
-
-        DoMeleeAttackIfReady();
     }
 };
 
