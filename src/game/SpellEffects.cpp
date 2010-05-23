@@ -7611,9 +7611,24 @@ void Spell::EffectReputation(SpellEffectIndex eff_idx)
 
     Player *_player = (Player*)unitTarget;
 
-    int32  rep_change = m_currentBasePoints[eff_idx];
+    int32  rep_change = 0;
 
     uint32 faction_id = m_spellInfo->EffectMiscValue[eff_idx];
+
+    // spells with wrong Basepoints in DBC needs custom handling
+    switch(m_spellInfo->Id)
+    {
+        case 61306:
+        case 61311:
+        case 61312:
+        case 69757:
+        case 61308:
+            rep_change = 520;
+            break;
+        default: 
+            rep_change = m_currentBasePoints[eff_idx];
+            break;
+    }
 
     FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction_id);
 
