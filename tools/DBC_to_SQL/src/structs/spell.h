@@ -203,7 +203,7 @@ char const *spell_translation[SPELL_DBC_COLUMN_NUMS][2] =
     {"char*",    "Rank14"},                                       // 167      m_nameSubtext_lang
     {"char*",    "Rank15"},                                       // 168      m_nameSubtext_lang
     {"uint32",   "RankFlags"},                                    // 169      not used
-    {"char*",    "Description0"},                                 // 170      m_description_lang not used
+    {"text",     "Description0"},                                 // 170      m_description_lang not used
     {"char*",    "Description1"},                                 // 171      m_description_lang not used
     {"char*",    "Description2"},                                 // 172      m_description_lang not used
     {"char*",    "Description3"},                                 // 173      m_description_lang not used
