@@ -52,7 +52,7 @@ enum
     SAY_BEFORE_RITUAL       = -1614992,
     EMOTE_DISCIPLE_1        = -1614991,
     EMOTE_NARALEX_1         = -1614990,
-    SAY_ATTACKED           = -1614989,
+    SAY_ATTACKED            = -1614989,
     EMOTE_NARALEX_2         = -1614987,
     SAY_BEFORE_MUTANOUS     = -1614986,
     SAY_NARALEX_AWAKEN      = -1614985,

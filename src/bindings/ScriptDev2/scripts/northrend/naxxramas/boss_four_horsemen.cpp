@@ -100,6 +100,8 @@ enum
     CORNER_POINT            = 0
 };
 
+uint32 Horsemen[4] = {NPC_ZELIEK, NPC_THANE, NPC_BLAUMEUX, NPC_RIVENDARE}; 
+
 // above this thistance creature switch to spam SPELL_UNYILDING_PAIN
 #define UNYILDING_PAIN_DISTANCE 55.0f
 
@@ -107,8 +109,8 @@ float EngagePosition [4][3] =
 {
     {2533.84f, -3016.21f, 241.32f}, // Korth'azz
     {2589.03f, -2956.95f, 241.32f}, // Baron Rivendare
-    {2471.40f, -2970.42f, 241.32f}, // Lady Blaumeux
-    {2501.33f, -2898.32f, 241.27f}  // Sir Zeliek 
+    {2476.67f, -2967.28f, 241.27f}, // Lady Blaumeux
+    {2538.64f, -2903.14f, 241.27f}  // Sir Zeliek 
 };
 
 bool HasPlayerInRange(Creature* m_creature)
@@ -155,44 +157,52 @@ Player* GetClosestPlayer(Creature* m_creature)
     return NULL;
 }
 
-void AssistInAttack(Creature* pAttacker, Unit* pVictim, instance_naxxramas* m_pInstance)
+struct MANGOS_DLL_DECL npc_horsemen_tap_listAI : public ScriptedAI
 {
-    uint32 HorsemanEntry[4] = {NPC_ZELIEK, NPC_THANE, NPC_BLAUMEUX, NPC_RIVENDARE};
-
-    for (uint8 i = 0; i < 4; ++i)
+    npc_horsemen_tap_listAI(Creature* pCreature) : ScriptedAI(pCreature)
     {
-        if (HorsemanEntry[i] == pAttacker->GetEntry())
-            continue;
-
-        Creature* pHorseman = (Creature*)Unit::GetUnit(*pAttacker, m_pInstance->GetData64(HorsemanEntry[i]));
-        if ( !pHorseman || !pHorseman->isAlive() || pHorseman->SelectHostileTarget() || pHorseman->getVictim() ||
-            !pVictim->isInAccessablePlaceFor(pHorseman) || !pHorseman->IsHostileTo(pVictim) )
-            continue;
-
-        pHorseman->AI()->AttackStart(pVictim);
+        m_pInstance = (instance_naxxramas*)pCreature->GetInstanceData();
+        Reset();
     }
-}
 
-void ReachedHome(Creature* m_creature, instance_naxxramas* m_pInstance)
+    ScriptedInstance* m_pInstance;
+
+    void Reset(){}
+
+    void EnterEvadeMode()
+    {
+        if (m_pInstance)
+        {
+            for (uint8 i = 0; i < 4; ++i)
+            {
+                if (Creature* pHorsemen = (Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(Horsemen[i])))
+                {
+                    if (pHorsemen->isAlive())
+                        pHorsemen->AI()->EnterEvadeMode();
+                    else
+                        pHorsemen->Respawn();
+                }
+            }
+        }
+        ScriptedAI::EnterEvadeMode();
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if (m_creature->getVictim()->GetDistance2d(2652.13f, -3081.41f) < 95.0f)
+            EnterEvadeMode();
+
+        if (m_pInstance && m_pInstance->GetData(TYPE_FOUR_HORSEMEN) == DONE)
+            m_creature->ForcedDespawn();
+    }
+};
+
+CreatureAI* GetAI_npc_horsemen_tap_list(Creature* pCreature)
 {
-    uint32 HorsemanEntry[4] = {NPC_ZELIEK, NPC_THANE, NPC_BLAUMEUX, NPC_RIVENDARE};
-
-    for (uint8 i = 0; i < 4; ++i)
-    {
-        if (HorsemanEntry[i] == m_creature->GetEntry())
-            continue;
-
-        Creature* pHorseman = (Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(HorsemanEntry[i]));
-        if (!pHorseman)
-            continue;
-
-        if (!pHorseman->isAlive() && m_pInstance->GetData(TYPE_FOUR_HORSEMEN) == NOT_STARTED)
-            pHorseman->Respawn();
-
-        if (Unit* pVictim = pHorseman->getVictim())
-            if (pVictim->isInAccessablePlaceFor(m_creature) && m_creature->IsHostileTo(pVictim))
-                m_creature->AI()->AttackStart(pVictim);
-    }
+    return new npc_horsemen_tap_listAI(pCreature);
 }
 
 struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
@@ -212,6 +222,7 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
     uint32 m_uiShadowBoltTimer;
     uint32 m_uiMarkTimer;
     uint32 m_uiVoidZoneTimer;
+    uint32 m_uiCheckoutTapList;
 
     void Reset()
     {
@@ -220,6 +231,7 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
         m_uiMarkTimer       = 24000;
         m_uiVoidZoneTimer   = 15000;
         m_uiMarksCasted     = 0;
+        m_uiCheckoutTapList = 0;
     }
 
     void Aggro(Unit* pWho)
@@ -230,8 +242,19 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
         if (m_pInstance)
         {
             m_pInstance->SetData(TYPE_BLAUMEUX, IN_PROGRESS);
-            AssistInAttack(m_creature, pWho, m_pInstance);
         }
+    }
+
+    void AttackedBy(Unit* pWho)
+    {
+        if (!pWho)
+            return;
+
+        if (m_pInstance)
+            if (Unit* pTapList = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_HORSEMEN_TAP_LIST)))
+                pTapList->AddThreat(pWho);
+
+        ScriptedAI::AttackedBy(pWho);
     }
 
     void KilledUnit(Unit* pVictim)
@@ -250,16 +273,24 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
     void JustReachedHome()
     {
         if (m_pInstance)
-        {
             m_pInstance->SetData(TYPE_BLAUMEUX, NOT_STARTED);
-            ReachedHome(m_creature, m_pInstance);
-        }
     }
 
     void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        {
+            if (m_uiCheckoutTapList <= uiDiff)
+            {
+                if (Unit* pTapList = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_HORSEMEN_TAP_LIST)))
+                    if (Unit* pVictim = pTapList->getVictim())
+                        m_creature->AI()->AttackStart(pVictim);
+                m_uiCheckoutTapList = 2500;
+            }
+            else
+                m_uiCheckoutTapList -= uiDiff;
             return;
+        }
 
         if (!HasPlayerInRange(m_creature))
         {
@@ -277,7 +308,7 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
         if (m_uiMarkTimer <= uiDiff)
         {
             DoCastSpellIfCan(m_creature, SPELL_MARK_OF_BLAUMEUX, CAST_INTERRUPT_PREVIOUS);
-            
+
             ++m_uiMarksCasted;
             if (m_uiMarksCasted >= 100)
                 DoCastSpellIfCan(m_creature, SPELL_BESERK);
@@ -328,12 +359,14 @@ struct MANGOS_DLL_DECL boss_rivendare_naxxAI : public ScriptedAI
     uint8  m_uiMarksCasted;
     uint32 m_uiMarkTimer;
     uint32 m_uiUnholyShadow;
+    uint32 m_uiCheckoutTapList;
 
     void Reset()
     {
-        m_uiMarkTimer    = 24000;
-        m_uiUnholyShadow = 15000;
-        m_uiMarksCasted  = 0;
+        m_uiMarkTimer       = 24000;
+        m_uiUnholyShadow    = 15000;
+        m_uiMarksCasted     = 0;
+        m_uiCheckoutTapList = 500; 
     }
 
     void Aggro(Unit* pWho)
@@ -350,11 +383,21 @@ struct MANGOS_DLL_DECL boss_rivendare_naxxAI : public ScriptedAI
         if (m_pInstance)
         {
             m_pInstance->SetData(TYPE_RIVENDARE, IN_PROGRESS);
-            AssistInAttack(m_creature, pWho, m_pInstance);
         }
-
     }
-    
+
+    void AttackedBy(Unit* pWho)
+    {
+        if (!pWho)
+            return;
+
+        if (m_pInstance)
+            if (Unit* pTapList = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_HORSEMEN_TAP_LIST)))
+                pTapList->AddThreat(pWho);
+
+        ScriptedAI::AttackedBy(pWho);
+    }
+
     void MovementInform(uint32 uiMoveType, uint32 uiPointId)
     {
         if (uiMoveType != POINT_MOTION_TYPE)
@@ -387,16 +430,25 @@ struct MANGOS_DLL_DECL boss_rivendare_naxxAI : public ScriptedAI
     void JustReachedHome()
     {
         if (m_pInstance)
-        {
             m_pInstance->SetData(TYPE_RIVENDARE, NOT_STARTED);
-            ReachedHome(m_creature, m_pInstance);
-        }
     }
 
     void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        {
+            if (m_uiCheckoutTapList <= uiDiff)
+            {
+                if (Unit* pTapList = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_HORSEMEN_TAP_LIST)))
+                    if (Unit* pVictim = pTapList->getVictim())
+                        m_creature->AI()->AttackStart(pVictim);
+                m_uiCheckoutTapList = 2500;
+            }
+            else
+                m_uiCheckoutTapList -= uiDiff;
+
             return;
+        }
 
         // Mark of Rivendare
         if (m_uiMarkTimer <= uiDiff)
@@ -420,7 +472,7 @@ struct MANGOS_DLL_DECL boss_rivendare_naxxAI : public ScriptedAI
         }
         else
             m_uiUnholyShadow -= uiDiff;
- 
+
         DoMeleeAttackIfReady();
     }
 };
@@ -444,12 +496,14 @@ struct MANGOS_DLL_DECL boss_thane_korthazzAI : public ScriptedAI
     uint8  m_uiMarksCasted;
     uint32 m_uiMarkTimer;
     uint32 m_uiMeteorTimer;
+    uint32 m_uiCheckoutTapList;
 
     void Reset()
     {
-        m_uiMarkTimer    = 24000;
-        m_uiMeteorTimer  = 15000;
-        m_uiMarksCasted  = 0;
+        m_uiMarkTimer       = 24000;
+        m_uiMeteorTimer     = 15000;
+        m_uiMarksCasted     = 0;
+        m_uiCheckoutTapList = 1000;
     }
 
     void Aggro(Unit* pWho)
@@ -461,8 +515,19 @@ struct MANGOS_DLL_DECL boss_thane_korthazzAI : public ScriptedAI
         if (m_pInstance)
         {
             m_pInstance->SetData(TYPE_THANE, IN_PROGRESS);
-            AssistInAttack(m_creature, pWho, m_pInstance);
         }
+    }
+
+    void AttackedBy(Unit* pWho)
+    {
+        if (!pWho)
+            return;
+
+        if (m_pInstance)
+            if (Unit* pTapList = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_HORSEMEN_TAP_LIST)))
+                pTapList->AddThreat(pWho);
+
+        ScriptedAI::AttackedBy(pWho);
     }
 
     void MovementInform(uint32 uiMoveType, uint32 uiPointId)
@@ -498,22 +563,31 @@ struct MANGOS_DLL_DECL boss_thane_korthazzAI : public ScriptedAI
     void JustReachedHome()
     {
         if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_THANE, NOT_STARTED);
-            ReachedHome(m_creature, m_pInstance);
-        }
+           m_pInstance->SetData(TYPE_THANE, NOT_STARTED);
     }
 
     void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        {
+            if (m_uiCheckoutTapList <= uiDiff)
+            {
+                if (Unit* pTapList = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_HORSEMEN_TAP_LIST)))
+                    if (Unit* pVictim = pTapList->getVictim())
+                        m_creature->AI()->AttackStart(pVictim);
+                m_uiCheckoutTapList = 2500;
+            }
+            else
+                m_uiCheckoutTapList -= uiDiff;
+
             return;
+        }
 
         // Mark of Korthazz
         if (m_uiMarkTimer <= uiDiff)
         {
             DoCastSpellIfCan(m_creature, SPELL_MARK_OF_KORTHAZZ, CAST_INTERRUPT_PREVIOUS);
-                        
+
             ++m_uiMarksCasted;
             if (m_uiMarksCasted >= 100)
                 DoCastSpellIfCan(m_creature, SPELL_BESERK);
@@ -557,14 +631,16 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
     uint32 m_uiMarkTimer;
     uint32 m_uiHolyWrathTimer;
     uint32 m_uiHolyBoltTimer;
+    uint32 m_uiCheckoutTapList;
 
     void Reset()
     {
-        m_uiHolyBoltTimer   = 3000;
-        m_uiMarkTimer       = 24000;
-        m_uiHolyWrathTimer  = 12000;
-        m_uiCondemnationTimer = 2000;
-        m_uiMarksCasted     = 0;
+        m_uiHolyBoltTimer       = 3000;
+        m_uiMarkTimer           = 24000;
+        m_uiHolyWrathTimer      = 12000;
+        m_uiCondemnationTimer   = 2000;
+        m_uiMarksCasted         = 0;
+        m_uiCheckoutTapList     = 1500;
     }
 
     void Aggro(Unit* pWho)
@@ -576,8 +652,19 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
         if (m_pInstance)
         {
             m_pInstance->SetData(TYPE_ZELIEK, IN_PROGRESS);
-            AssistInAttack(m_creature, pWho, m_pInstance);
         }
+    }
+
+    void AttackedBy(Unit* pWho)
+    {
+        if (!pWho)
+            return;
+
+        if (m_pInstance)
+            if (Unit* pTapList = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_HORSEMEN_TAP_LIST)))
+                pTapList->AddThreat(pWho);
+
+        ScriptedAI::AttackedBy(pWho);
     }
 
     void KilledUnit(Unit* pVictim)
@@ -588,6 +675,7 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
     void JustDied(Unit* pKiller)
     {
         DoScriptText(SAY_ZELI_DEATH, m_creature);
+        DoCastSpellIfCan(m_creature, SPELL_SPIRIT_OF_ZELIEK, CAST_TRIGGERED);
 
         if (m_pInstance)
             m_pInstance->SetData(TYPE_ZELIEK, DONE);
@@ -596,17 +684,25 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
     void JustReachedHome()
     {
         if (m_pInstance)
-        {
             m_pInstance->SetData(TYPE_ZELIEK, NOT_STARTED);
-            ReachedHome(m_creature, m_pInstance);
-        }
     }
 
     void UpdateAI(const uint32 uiDiff)
     {
-        //Return since we have no target
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        {
+            if (m_uiCheckoutTapList <= uiDiff)
+            {
+                if (Unit* pTapList = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_HORSEMEN_TAP_LIST)))
+                    if (Unit* pVictim = pTapList->getVictim())
+                        m_creature->AI()->AttackStart(pVictim);
+                m_uiCheckoutTapList = 2500;
+            }
+            else
+                m_uiCheckoutTapList -= uiDiff;
+
             return;
+        }
 
         if (!HasPlayerInRange(m_creature))
         {
@@ -624,7 +720,7 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
         if (m_uiMarkTimer <= uiDiff)
         {
             DoCastSpellIfCan(m_creature, SPELL_MARK_OF_ZELIEK, CAST_INTERRUPT_PREVIOUS);
-            
+
             ++m_uiMarksCasted;
             if (m_uiMarksCasted >= 100)
                 DoCastSpellIfCan(m_creature, SPELL_BESERK);
@@ -683,5 +779,10 @@ void AddSC_boss_four_horsemen()
     NewScript = new Script;
     NewScript->Name = "boss_sir_zeliek";
     NewScript->GetAI = &GetAI_boss_sir_zeliek;
+    NewScript->RegisterSelf();
+
+    NewScript = new Script;
+    NewScript->Name = "npc_horsemen_tap_list";
+    NewScript->GetAI = &GetAI_npc_horsemen_tap_list;
     NewScript->RegisterSelf();
 }

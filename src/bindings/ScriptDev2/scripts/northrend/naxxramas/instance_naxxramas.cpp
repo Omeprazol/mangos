@@ -42,6 +42,7 @@ instance_naxxramas::instance_naxxramas(Map* pMap) : ScriptedInstance(pMap),
     m_uiThaneGUID(0),
     m_uiBlaumeuxGUID(0),
     m_uiRivendareGUID(0),
+    m_uiHorsemenTapListGUID(0),
 
     m_uiThaddiusGUID(0),
     m_uiStalaggGUID(0),
@@ -91,21 +92,22 @@ void instance_naxxramas::OnCreatureCreate(Creature* pCreature)
 {
     switch(pCreature->GetEntry())
     {
-        case NPC_ANUB_REKHAN:       m_uiAnubRekhanGUID = pCreature->GetGUID();  break;
-        case NPC_FAERLINA:          m_uiFaerlinanGUID = pCreature->GetGUID();   break;
-        case NPC_THADDIUS:          m_uiThaddiusGUID = pCreature->GetGUID();    break;
-        case NPC_STALAGG:           m_uiStalaggGUID = pCreature->GetGUID();     break;
-        case NPC_FEUGEN:            m_uiFeugenGUID = pCreature->GetGUID();      break;
-        case NPC_ZELIEK:            m_uiZeliekGUID = pCreature->GetGUID();      break;
-        case NPC_THANE:             m_uiThaneGUID = pCreature->GetGUID();       break;
-        case NPC_BLAUMEUX:          m_uiBlaumeuxGUID = pCreature->GetGUID();    break;
-        case NPC_RIVENDARE:         m_uiRivendareGUID = pCreature->GetGUID();   break;
-        case NPC_GOTHIK:            m_uiGothikGUID = pCreature->GetGUID();      break;
-        case NPC_KELTHUZAD:         m_uiKelthuzadGUID = pCreature->GetGUID();   break;
+        case NPC_ANUB_REKHAN:       m_uiAnubRekhanGUID = pCreature->GetGUID();      break;
+        case NPC_FAERLINA:          m_uiFaerlinanGUID = pCreature->GetGUID();       break;
+        case NPC_THADDIUS:          m_uiThaddiusGUID = pCreature->GetGUID();        break;
+        case NPC_STALAGG:           m_uiStalaggGUID = pCreature->GetGUID();         break;
+        case NPC_FEUGEN:            m_uiFeugenGUID = pCreature->GetGUID();          break;
+        case NPC_ZELIEK:            m_uiZeliekGUID = pCreature->GetGUID();          break;
+        case NPC_THANE:             m_uiThaneGUID = pCreature->GetGUID();           break;
+        case NPC_BLAUMEUX:          m_uiBlaumeuxGUID = pCreature->GetGUID();        break;
+        case NPC_RIVENDARE:         m_uiRivendareGUID = pCreature->GetGUID();       break;
+        case NPC_HORSEMEN_TAP_LIST: m_uiHorsemenTapListGUID = pCreature->GetGUID(); break;
+        case NPC_GOTHIK:            m_uiGothikGUID = pCreature->GetGUID();          break;
+        case NPC_KELTHUZAD:         m_uiKelthuzadGUID = pCreature->GetGUID();       break;
         case NPC_SUB_BOSS_TRIGGER:  m_lGothTriggerList.push_back(pCreature->GetGUID()); break;
         case NPC_NAXXRAMAS_FOLLOWER:
         case NPC_NAXXRAMAS_WORSHIPPER:
-            lFaelinasAdds.push_back(pCreature->GetGUID());                      break;
+            lFaelinasAdds.push_back(pCreature->GetGUID());                          break;
     }
 }
 
@@ -138,7 +140,7 @@ void instance_naxxramas::OnObjectCreate(GameObject* pGo)
             ChamberAreaNo = MIDDLE_LOWER;
         else if (bDiff <= -25 && bDiff >= -120)
             ChamberAreaNo = BOTTOM_LOWEST;
- 
+
         lFissuresGUIDs[ChamberAreaNo].push_back(pGo->GetGUID());
     }
 
@@ -204,7 +206,7 @@ void instance_naxxramas::OnObjectCreate(GameObject* pGo)
             break;
         case GO_MILI_HORSEMEN_DOOR:
             m_uiHorsemenDoorGUID  = pGo->GetGUID();
-            if (m_auiEncounter[7] == DONE || m_auiEncounter[4] == DONE)
+            //if (m_auiEncounter[7] == DONE)
                 pGo->SetGoState(GO_STATE_ACTIVE);
             break;
 
@@ -577,6 +579,8 @@ uint64 instance_naxxramas::GetData64(uint32 uiData)
             return m_uiBlaumeuxGUID;
         case NPC_RIVENDARE:
             return m_uiRivendareGUID;
+        case NPC_HORSEMEN_TAP_LIST:
+            return m_uiHorsemenTapListGUID;
         case NPC_THADDIUS:
             return m_uiThaddiusGUID;
         case NPC_STALAGG:

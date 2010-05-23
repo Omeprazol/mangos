@@ -49,6 +49,7 @@ enum
     NPC_THANE                   = 16064,
     NPC_BLAUMEUX                = 16065,
     NPC_RIVENDARE               = 30549,
+    NPC_HORSEMEN_TAP_LIST       = 32575,
 
     NPC_KELTHUZAD               = 15990,
 
@@ -200,6 +201,7 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
         uint64 m_uiThaneGUID;
         uint64 m_uiBlaumeuxGUID;
         uint64 m_uiRivendareGUID;
+        uint64 m_uiHorsemenTapListGUID;
 
         uint64 m_uiThaddiusGUID;
         uint64 m_uiStalaggGUID;
