@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `character_stats` (
   `rangedAttackPower` int(10) unsigned NOT NULL DEFAULT '0',
   `spellPower` int(10) unsigned NOT NULL DEFAULT '0',
   `a_apmelee` int(11) NOT NULL,
-  `a_apranged` int(11) NOT NULL,
+  `a_ranged` int(11) NOT NULL,
   `a_blockrating` int(11) NOT NULL,
   `a_defrating` int(11) NOT NULL,
   `a_dodgerating` int(11) NOT NULL,
