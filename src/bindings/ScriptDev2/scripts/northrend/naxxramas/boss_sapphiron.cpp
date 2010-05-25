@@ -175,10 +175,12 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 
             if (m_uiBlizzardTimer < uiDiff)
             {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
                 {
-                    if (DoCastSpellIfCan(pTarget, m_bIsRegularMode ? SPELL_BLIZZARD : H_SPELL_BLIZZARD) == CAST_OK)
-                        m_uiBlizzardTimer = 20000;
+                    float fDestX, fDestY, fDestZ;
+                    pTarget->GetPosition(fDestX, fDestY, fDestZ);
+                    m_creature->CastSpell(fDestX, fDestY, fDestZ, m_bIsRegularMode ? SPELL_BLIZZARD : H_SPELL_BLIZZARD, false, NULL, NULL, m_creature->GetGUID());
+                    m_uiBlizzardTimer = 20000;
                 }
             }
             else
@@ -209,9 +211,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                     m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LIFTOFF);
                     m_creature->GetMotionMaster()->Clear(false);
                     m_creature->GetMotionMaster()->MoveIdle();
-                    DoCastSpellIfCan(m_creature,11010);
                     m_creature->SetHover(true);
-                    DoCastSpellIfCan(m_creature,18430);
                     m_uiIceboltTimer = 4000;
                     m_uiIceboltCount = 0;
                     m_bLandoff = false;
