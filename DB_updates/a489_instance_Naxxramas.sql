@@ -93,6 +93,13 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`
 -- restored gameobject - door spawn that someone deleted :<
 -- INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES('65753','181119','533','3','1','2587.96','-3017.17','241.304','3.14159','0','0','1','0','180','0','1');
 
+####################   boss_kelthuzad    #########################################################
+
+-- fix mobs' speed (first phase)
+UPDATE `creature_template` SET `speed_run` = 0.25,  `speed_walk` = 0.7 WHERE `entry` = 16427;
+UPDATE `creature_template` SET `speed_run` = 0.55,  `speed_walk` = 1.5 WHERE `entry` = 16428;
+UPDATE `creature_template` SET `speed_run` =0.1,  `speed_walk` = 0.2 WHERE `entry` = 16429;
+
 /*
 -- Arachnid Quarter::Worshippers and folowers
 DELETE FROM `creature` WHERE `id` IN (16506);
