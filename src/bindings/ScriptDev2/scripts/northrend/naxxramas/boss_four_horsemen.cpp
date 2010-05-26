@@ -103,7 +103,7 @@ enum
 uint32 Horsemen[4] = {NPC_ZELIEK, NPC_THANE, NPC_BLAUMEUX, NPC_RIVENDARE}; 
 
 // above this thistance creature switch to spam SPELL_UNYILDING_PAIN
-#define UNYILDING_PAIN_DISTANCE 55.0f
+#define MARK_DISTANCE 45.0f
 
 float EngagePosition [4][3] =
 {
@@ -113,29 +113,12 @@ float EngagePosition [4][3] =
     {2538.64f, -2903.14f, 241.27f}  // Sir Zeliek 
 };
 
-bool HasPlayerInRange(Creature* m_creature)
-{
-    ThreatList const& t_list = m_creature->getThreatManager().getThreatList();
-    if (!t_list.empty())
-    {
-        for(ThreatList::const_iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
-        {
-            Unit *pPlayer = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid());
-            if (pPlayer && pPlayer->GetTypeId() == TYPEID_PLAYER && m_creature->GetDistance(pPlayer) < UNYILDING_PAIN_DISTANCE)
-                return true;
-        }
-    }
-    return false;
-}
-
-Player* GetClosestPlayer(Creature* m_creature)
+Player* GetClosestPlayer(Creature* m_creature, float fDistance)
 {
     ThreatList const& t_list = m_creature->getThreatManager().getThreatList();
     if (t_list.empty())
         return NULL;
 
-    // used spell range
-    float fDistance = UNYILDING_PAIN_DISTANCE;
     Player* pTemp = NULL;
 
     for(ThreatList::const_iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
@@ -240,9 +223,7 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
         SetCombatMovement(false);
         m_creature->GetMotionMaster()->MovePoint(CORNER_POINT, EngagePosition[2][0], EngagePosition[2][1], EngagePosition[2][2]);
         if (m_pInstance)
-        {
             m_pInstance->SetData(TYPE_BLAUMEUX, IN_PROGRESS);
-        }
     }
 
     void AttackedBy(Unit* pWho)
@@ -292,7 +273,8 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
             return;
         }
 
-        if (!HasPlayerInRange(m_creature))
+        Player* pPlayer = GetClosestPlayer(m_creature, MARK_DISTANCE);
+        if (!pPlayer)
         {
             if (m_uiPainTimer <= uiDiff)
             {
@@ -303,12 +285,18 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
                 m_uiPainTimer -= uiDiff;
             return;
         }
+        else if (m_uiShadowBoltTimer <= uiDiff)
+        {
+            DoCastSpellIfCan(pPlayer, m_bIsRegularMode ? SPELL_SHADOW_BOLT : SPELL_SHADOW_BOLT_H);
+            m_uiShadowBoltTimer = 3000;
+        }
+        else
+            m_uiShadowBoltTimer -= uiDiff;
 
         // Mark of Blaumeux
         if (m_uiMarkTimer <= uiDiff)
         {
             DoCastSpellIfCan(m_creature, SPELL_MARK_OF_BLAUMEUX, CAST_INTERRUPT_PREVIOUS);
-
             ++m_uiMarksCasted;
             if (m_uiMarksCasted >= 100)
                 DoCastSpellIfCan(m_creature, SPELL_BESERK);
@@ -327,16 +315,6 @@ struct MANGOS_DLL_DECL boss_lady_blaumeuxAI : public ScriptedAI
         }
         else
             m_uiVoidZoneTimer -= uiDiff;
-
-        // Shadow Bolt
-        if (m_uiShadowBoltTimer <= uiDiff)
-        {
-            if (Player* pPlayer = GetClosestPlayer(m_creature))
-                DoCastSpellIfCan(pPlayer, m_bIsRegularMode ? SPELL_SHADOW_BOLT : SPELL_SHADOW_BOLT_H);
-            m_uiShadowBoltTimer = 3000;
-        }
-        else
-            m_uiShadowBoltTimer -= uiDiff;
     }
 };
 
@@ -381,9 +359,7 @@ struct MANGOS_DLL_DECL boss_rivendare_naxxAI : public ScriptedAI
         m_creature->GetMotionMaster()->MovePoint(CORNER_POINT, EngagePosition[1][0], EngagePosition[1][1], EngagePosition[1][2]);
 
         if (m_pInstance)
-        {
             m_pInstance->SetData(TYPE_RIVENDARE, IN_PROGRESS);
-        }
     }
 
     void AttackedBy(Unit* pWho)
@@ -513,9 +489,7 @@ struct MANGOS_DLL_DECL boss_thane_korthazzAI : public ScriptedAI
         m_creature->GetMotionMaster()->MovePoint(CORNER_POINT, EngagePosition[0][0], EngagePosition[0][1], EngagePosition[0][2]);
 
         if (m_pInstance)
-        {
             m_pInstance->SetData(TYPE_THANE, IN_PROGRESS);
-        }
     }
 
     void AttackedBy(Unit* pWho)
@@ -650,9 +624,7 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
         m_creature->GetMotionMaster()->MovePoint(CORNER_POINT, EngagePosition[3][0], EngagePosition[3][1], EngagePosition[3][2]);
 
         if (m_pInstance)
-        {
             m_pInstance->SetData(TYPE_ZELIEK, IN_PROGRESS);
-        }
     }
 
     void AttackedBy(Unit* pWho)
@@ -704,7 +676,8 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
             return;
         }
 
-        if (!HasPlayerInRange(m_creature))
+        Player* pPlayer = GetClosestPlayer(m_creature, MARK_DISTANCE);
+        if (!pPlayer)
         {
             if (m_uiCondemnationTimer <= uiDiff)
             {
@@ -715,12 +688,18 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
                 m_uiCondemnationTimer -= uiDiff;
             return;
         }
+        else if(m_uiHolyBoltTimer <= uiDiff)
+        {
+            DoCastSpellIfCan(pPlayer, m_bIsRegularMode ? SPELL_HOLY_BOLT : SPELL_HOLY_BOLT_H);
+            m_uiHolyBoltTimer = 3000;
+        }
+        else
+            m_uiHolyBoltTimer -= uiDiff;
 
         // Mark of Zeliek
         if (m_uiMarkTimer <= uiDiff)
         {
             DoCastSpellIfCan(m_creature, SPELL_MARK_OF_ZELIEK, CAST_INTERRUPT_PREVIOUS);
-
             ++m_uiMarksCasted;
             if (m_uiMarksCasted >= 100)
                 DoCastSpellIfCan(m_creature, SPELL_BESERK);
@@ -739,16 +718,6 @@ struct MANGOS_DLL_DECL boss_sir_zeliekAI : public ScriptedAI
         }
         else
             m_uiHolyWrathTimer -= uiDiff;
-
-        // Shadow Bolt
-        if (m_uiHolyBoltTimer <= uiDiff)
-        {
-            if (Player* pPlayer = GetClosestPlayer(m_creature))
-                DoCastSpellIfCan(pPlayer, m_bIsRegularMode ? SPELL_HOLY_BOLT : SPELL_HOLY_BOLT_H);
-            m_uiHolyBoltTimer = 3000;
-        }
-        else
-            m_uiHolyBoltTimer -= uiDiff;
     }
 };
 
