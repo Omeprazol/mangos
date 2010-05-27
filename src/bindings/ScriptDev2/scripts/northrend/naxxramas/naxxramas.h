@@ -51,6 +51,7 @@ enum
     NPC_RIVENDARE               = 30549,
     NPC_HORSEMEN_TAP_LIST       = 32575,
 
+    NPC_SAPPHIRON               = 15989,
     NPC_KELTHUZAD               = 15990,
 
     // Gothik
@@ -104,6 +105,7 @@ enum
     // Frostwyrm Lair
     GO_KELTHUZAD_WATERFALL_DOOR = 181225,                   // exit, open after sapphiron is dead
     GO_KELTHUZAD_EXIT_DOOR      = 181228,
+    GO_SAPPHIRON_BIRTH          = 181356,
 
     // Eyes
     GO_ARAC_EYE_RAMP            = 181212,
@@ -119,7 +121,8 @@ enum
 
     AREATRIGGER_FROSTWYRM       = 4120,                    //not needed here, but AT to be scripted
     AREATRIGGER_KELTHUZAD       = 4112,
-    AREATRIGGER_GOTHIK          = 4116
+    AREATRIGGER_GOTHIK          = 4116,
+    AREATRIGGER_SAPPHIRON       = 4167
 };
 
 enum ChamberArea
@@ -208,6 +211,8 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
         uint64 m_uiFeugenGUID;
 
         uint64 m_uiKelthuzadGUID;
+        uint64 m_uiSapphironGUID;
+        uint64 m_uiSapphironBirthGUID;
 
         uint64 m_uiPathExitDoorGUID;
         uint64 m_uiGlutExitDoorGUID;

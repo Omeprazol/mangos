@@ -93,6 +93,22 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`
 -- restored gameobject - door spawn that someone deleted :<
 -- INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES('65753','181119','533','3','1','2587.96','-3017.17','241.304','3.14159','0','0','1','0','180','0','1');
 
+####################   boss_sapphiron    #########################################################
+
+-- Sapphiron Birth
+REPLACE INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES
+('507500','181356','533','1','1','3522.39','-5236.78','137.709','4.50295','0','0','0.296306','0.955093','604800','0','1');
+UPDATE gameobject_template SET size = 1.5 WHERE entry = 181356;
+
+-- FrostWyrm areatrigger (triggers Intro event)
+INSERT INTO areatrigger_scripts VALUES
+(4167, 'at_naxxramas');
+
+/* clean udb 390 spawn
+REPLACE INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
+('133932','15989','533','3','1','16033','0','3522.39','-5236.78','137.709','4.50295','604800','0','0','4183500','0','0','0');
+*/
+
 ####################   boss_kelthuzad    #########################################################
 
 -- fix mobs' speed (first phase)

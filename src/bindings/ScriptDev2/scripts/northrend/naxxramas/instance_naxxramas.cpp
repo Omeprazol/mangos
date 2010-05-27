@@ -49,6 +49,8 @@ instance_naxxramas::instance_naxxramas(Map* pMap) : ScriptedInstance(pMap),
     m_uiFeugenGUID(0),
 
     m_uiKelthuzadGUID(0),
+    m_uiSapphironGUID(0),
+    m_uiSapphironBirthGUID(0),
 
     m_uiPathExitDoorGUID(0),
     m_uiGlutExitDoorGUID(0),
@@ -107,7 +109,12 @@ void instance_naxxramas::OnCreatureCreate(Creature* pCreature)
         case NPC_SUB_BOSS_TRIGGER:  m_lGothTriggerList.push_back(pCreature->GetGUID()); break;
         case NPC_NAXXRAMAS_FOLLOWER:
         case NPC_NAXXRAMAS_WORSHIPPER:
-            lFaelinasAdds.push_back(pCreature->GetGUID());                          break;
+            lFaelinasAdds.push_back(pCreature->GetGUID());
+            break;
+        case NPC_SAPPHIRON:
+            m_uiSapphironGUID = pCreature->GetGUID();
+            pCreature->SetVisibility(VISIBILITY_OFF);
+            break;
     }
 }
 
@@ -229,6 +236,12 @@ void instance_naxxramas::OnObjectCreate(GameObject* pGo)
             m_uiThadDoorGUID = pGo->GetGUID();
             if (m_auiEncounter[11] == DONE)
                 pGo->SetGoState(GO_STATE_ACTIVE);
+            break;
+
+        case GO_SAPPHIRON_BIRTH:
+            m_uiSapphironBirthGUID = pGo->GetGUID();
+            if (m_auiEncounter[13] == NOT_STARTED && !pGo->isSpawned())
+                pGo->Respawn();
             break;
 
         case GO_KELTHUZAD_WATERFALL_DOOR:
@@ -589,6 +602,10 @@ uint64 instance_naxxramas::GetData64(uint32 uiData)
             return m_uiFeugenGUID;
         case NPC_GOTHIK:
             return m_uiGothikGUID;
+        case NPC_SAPPHIRON:
+            return m_uiSapphironGUID;
+        case GO_SAPPHIRON_BIRTH:
+            return m_uiSapphironBirthGUID;
         case NPC_KELTHUZAD:
             return m_uiKelthuzadGUID;
     }
@@ -678,14 +695,14 @@ InstanceData* GetInstanceData_instance_naxxramas(Map* pMap)
 
 bool AreaTrigger_at_naxxramas(Player* pPlayer, AreaTriggerEntry* pAt)
 {
+    instance_naxxramas* pInstance = (instance_naxxramas*)pPlayer->GetInstanceData();
+
+    if (!pInstance)
+        return false;
+
     if (pAt->id == AREATRIGGER_KELTHUZAD)
     {
         if (pPlayer->isGameMaster() || pPlayer->isDead())
-            return false;
-
-        instance_naxxramas* pInstance = (instance_naxxramas*)pPlayer->GetInstanceData();
-
-        if (!pInstance)
             return false;
 
         pInstance->SetChamberCenterCoords(pAt->x, pAt->y, pAt->z);
@@ -698,9 +715,19 @@ bool AreaTrigger_at_naxxramas(Player* pPlayer, AreaTriggerEntry* pAt)
                 {
                     pInstance->SetData(TYPE_KELTHUZAD, IN_PROGRESS);
                     pKelthuzad->SetInCombatWithZone();
+                }
             }
         }
     }
+    else if (pAt->id == AREATRIGGER_SAPPHIRON)
+    {
+        GameObject* pSapphironBirth = pInstance->instance->GetGameObject(pInstance->GetData64(GO_SAPPHIRON_BIRTH));
+        Creature* pSapphiron = pInstance->instance->GetCreature(pInstance->GetData64(NPC_SAPPHIRON));
+        if (pSapphironBirth && pSapphironBirth->isSpawned())
+        {
+            pSapphironBirth->SendObjectDeSpawnAnim(pSapphironBirth->GetGUID());
+            pInstance->SetData(TYPE_SAPPHIRON, SPECIAL);
+        }
     }
 
     return false;

@@ -26,30 +26,33 @@ EndScriptData */
 
 enum
 {
-    EMOTE_BREATH         = -1533082,
-    EMOTE_ENRAGE         = -1533083,
-    EMOTE_FLY            = -1533160,
-    EMOTE_GROUND         = -1533161,
+    EMOTE_BREATH            = -1533082,
+    EMOTE_ENRAGE            = -1533083,
+    EMOTE_FLY               = -1533160,
+    EMOTE_GROUND            = -1533161,
 
-    SPELL_ICEBOLT        = 28522,
-    SPELL_FROST_BREATH   = 29318,
+    SPELL_ICEBOLT           = 28522,
+    SPELL_FROST_BREATH      = 29318,
 
-    SPELL_FROST_AURA     = 28531,
-    H_SPELL_FROST_AURA   = 55799,
+    SPELL_FROST_AURA        = 28531,
+    H_SPELL_FROST_AURA      = 55799,
 
-    SPELL_LIFE_DRAIN     = 28542,
-    H_SPELL_LIFE_DRAIN   = 55665,
+    SPELL_LIFE_DRAIN        = 28542,
+    H_SPELL_LIFE_DRAIN      = 55665,
 
-    SPELL_TAIL_SWEEP     = 55697,
-    H_SPELL_TAIL_SWEEP   = 55696,
+    SPELL_TAIL_SWEEP        = 55697,
+    H_SPELL_TAIL_SWEEP      = 55696,
 
-    SPELL_BLIZZARD       = 28547,
-    H_SPELL_BLIZZARD     = 55699,
+    SPELL_BLIZZARD          = 28547,
+    H_SPELL_BLIZZARD        = 55699,
 
-    SPELL_CLEAVE         = 19983,
-    SPELL_BESERK         = 26662,
+    SPELL_CLEAVE            = 19983,
+    SPELL_BESERK            = 26662,
 
-    GO_ICE_BLOCK         = 181247, // Not sure
+    SPELL_SUMMON_BLIZZ_1    = 28560, // script effect 100yd
+    SPELL_SUMMON_BLIZZ_2    = 29969, // dummy
+
+    GO_ICE_BLOCK            = 181247 // Not sure
 };
 
 struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
@@ -77,6 +80,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
     uint32 m_uiBeserkTimer;
     uint32 m_uiPhase;
     uint32 m_uiLandTimer;
+    uint32 m_uiRespawnTime;
     bool m_bLandoff;
     std::set<uint64> m_lIceBlocks;
 
@@ -90,6 +94,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
         m_uiFlyTimer = 45000;
         m_uiIceboltTimer = 4000;
         m_uiLandTimer = 2000;
+        m_uiRespawnTime = 22000;
         m_uiBeserkTimer = 15*MINUTE*IN_MILLISECONDS;
         m_uiPhase = 1;
         m_uiIceboltCount = 0;
@@ -146,6 +151,13 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 
     void UpdateAI(const uint32 uiDiff)
     {
+        if (m_pInstance && m_pInstance->GetData(TYPE_SAPPHIRON) == SPECIAL && m_creature->GetVisibility() == VISIBILITY_OFF)
+        {
+            if (m_uiRespawnTime < uiDiff)
+                m_creature->SetVisibility(VISIBILITY_ON);
+            else m_uiRespawnTime -= uiDiff;
+        } 
+
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
