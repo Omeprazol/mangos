@@ -7156,7 +7156,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     }
                 }
                 return false;
-                break;
             }
             // Lightning Overload
             if (dummySpell->SpellIconID == 2018)            // only this spell have SpellFamily Shaman SpellIconID == 2018 and dummy aura
@@ -12533,7 +12532,10 @@ void Unit::CleanupsBeforeDelete()
         CombatStop();
         ClearComboPointHolders();
         DeleteThreatList();
+        if (GetTypeId()==TYPEID_PLAYER)
         getHostileRefManager().setOnlineOfflineState(false);
+        else
+            getHostileRefManager().deleteReferences();
         RemoveAllAuras(AURA_REMOVE_BY_DELETE);
         GetMotionMaster()->Clear(false);                    // remove different non-standard movement generators.
     }
