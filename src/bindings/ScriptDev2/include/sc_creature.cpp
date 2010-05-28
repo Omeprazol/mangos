@@ -495,7 +495,8 @@ enum
     NPC_VOID_REAVER = 19516,
     NPC_JAN_ALAI    = 23578,
     NPC_SARTHARION  = 28860,
-    NPC_HEIGAN      = 15936
+    NPC_HEIGAN      = 15936,
+    NPC_SAPPHIRON   = 15989
 };
 
 bool ScriptedAI::EnterEvadeIfOutOfCombatArea(const uint32 uiDiff)
@@ -534,6 +535,9 @@ bool ScriptedAI::EnterEvadeIfOutOfCombatArea(const uint32 uiDiff)
                 return false;
         case NPC_HEIGAN:
             if (m_creature->GetDistance2d(2770.0f, -3688.0f) < 50.0f)
+                return false;
+        case NPC_SAPPHIRON:
+            if (m_creature->GetDistance2d(3521.48f, -5234.87f) < 66.0f)
                 return false;
             break;
 

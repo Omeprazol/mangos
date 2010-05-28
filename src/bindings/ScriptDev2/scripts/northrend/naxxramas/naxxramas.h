@@ -122,7 +122,8 @@ enum
     AREATRIGGER_FROSTWYRM       = 4120,                    //not needed here, but AT to be scripted
     AREATRIGGER_KELTHUZAD       = 4112,
     AREATRIGGER_GOTHIK          = 4116,
-    AREATRIGGER_SAPPHIRON       = 4167
+    AREATRIGGER_SAPPHIRON_BIRTH = 4167,
+    AREATRIGGER_ENTER_FROSTWYRM = 4120
 };
 
 enum ChamberArea

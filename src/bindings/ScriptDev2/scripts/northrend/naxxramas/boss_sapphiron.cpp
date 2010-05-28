@@ -154,7 +154,10 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
         if (m_pInstance && m_pInstance->GetData(TYPE_SAPPHIRON) == SPECIAL && m_creature->GetVisibility() == VISIBILITY_OFF)
         {
             if (m_uiRespawnTime < uiDiff)
+            {
+                m_creature->RemoveFlag(UNIT_FIELD_FLAGS, (UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_OOC_NOT_ATTACKABLE));
                 m_creature->SetVisibility(VISIBILITY_ON);
+            }
             else m_uiRespawnTime -= uiDiff;
         } 
 

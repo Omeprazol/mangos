@@ -95,17 +95,26 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`
 
 ####################   boss_sapphiron    #########################################################
 
+-- Sapphiron - unable to attack/be attacked while spawed (invisible)
+UPDATE creature_template SET
+unit_flags = unit_flags | 0x00000002 | 0x00000100 | 0x00000002
+WHERE entry IN (29991,15989);
+
 -- Sapphiron Birth
-REPLACE INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES
+DELETE FROM gameobject WHERE id = 181356;
+INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES
 ('507500','181356','533','1','1','3522.39','-5236.78','137.709','4.50295','0','0','0.296306','0.955093','604800','0','1');
 UPDATE gameobject_template SET size = 1.5 WHERE entry = 181356;
 
--- FrostWyrm areatrigger (triggers Intro event)
+-- FrostWyrm areatriggers (triggers Intro event reset/start)
+DELETE FROM areatrigger_scripts WHERE entry IN (4167, 4120)
 INSERT INTO areatrigger_scripts VALUES
-(4167, 'at_naxxramas');
+(4167, 'at_naxxramas'),
+(4120, 'at_naxxramas');
 
 /* clean udb 390 spawn
-REPLACE INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
+DELETE FROM creature WHERE id = 15989;
+INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
 ('133932','15989','533','3','1','16033','0','3522.39','-5236.78','137.709','4.50295','604800','0','0','4183500','0','0','0');
 */
 
