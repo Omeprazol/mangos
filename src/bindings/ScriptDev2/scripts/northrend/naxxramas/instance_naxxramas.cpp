@@ -51,6 +51,7 @@ instance_naxxramas::instance_naxxramas(Map* pMap) : ScriptedInstance(pMap),
     m_uiKelthuzadGUID(0),
     m_uiSapphironGUID(0),
     m_uiSapphironBirthGUID(0),
+    m_uiSapphironWingBuffetGUID(0),
 
     m_uiPathExitDoorGUID(0),
     m_uiGlutExitDoorGUID(0),
@@ -115,6 +116,9 @@ void instance_naxxramas::OnCreatureCreate(Creature* pCreature)
             m_uiSapphironGUID = pCreature->GetGUID();
             if (m_auiEncounter[13] == NOT_STARTED)
                 pCreature->SetVisibility(VISIBILITY_OFF);
+            break;
+        case NPC_SAPPHIRONS_WING_BUFFET:
+            m_uiSapphironWingBuffetGUID = pCreature->GetGUID();
             break;
     }
 }
@@ -605,6 +609,8 @@ uint64 instance_naxxramas::GetData64(uint32 uiData)
             return m_uiSapphironGUID;
         case GO_SAPPHIRON_BIRTH:
             return m_uiSapphironBirthGUID;
+        case NPC_SAPPHIRONS_WING_BUFFET:
+            return m_uiSapphironWingBuffetGUID;
         case NPC_KELTHUZAD:
             return m_uiKelthuzadGUID;
     }

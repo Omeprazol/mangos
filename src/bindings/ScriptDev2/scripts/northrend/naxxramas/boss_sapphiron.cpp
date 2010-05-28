@@ -26,34 +26,89 @@ EndScriptData */
 
 enum
 {
-    EMOTE_BREATH            = -1533082,
-    EMOTE_ENRAGE            = -1533083,
-    EMOTE_FLY               = -1533160,
-    EMOTE_GROUND            = -1533161,
+    EMOTE_BREATH                = -1533082,
+    EMOTE_ENRAGE                = -1533083,
+    EMOTE_FLY                   = -1533160,
+    EMOTE_GROUND                = -1533161,
 
-    SPELL_ICEBOLT           = 28522,
-    SPELL_FROST_BREATH      = 29318,
+    SPELL_ICEBOLT               = 28522,
+    SPELL_FROSTBREATH           = 29318,
+    SPELL_FROSTBREATH_EFFECT    = 28524,
+    SPELL_FROSTBREATH_VISUAL    = 30101,
+    SPELL_SAPPHIRONS_WING_BUFFET= 29328,
 
-    SPELL_FROST_AURA        = 28531,
-    H_SPELL_FROST_AURA      = 55799,
+    SPELL_FROST_AURA            = 28531,
+    H_SPELL_FROST_AURA          = 55799,
 
-    SPELL_LIFE_DRAIN        = 28542,
-    H_SPELL_LIFE_DRAIN      = 55665,
+    SPELL_LIFE_DRAIN            = 28542,
+    H_SPELL_LIFE_DRAIN          = 55665,
 
-    SPELL_TAIL_SWEEP        = 55697,
-    H_SPELL_TAIL_SWEEP      = 55696,
+    SPELL_TAIL_SWEEP            = 55697,
+    H_SPELL_TAIL_SWEEP          = 55696,
 
-    SPELL_BLIZZARD          = 28547,
-    H_SPELL_BLIZZARD        = 55699,
+    SPELL_BLIZZARD              = 28547,
+    H_SPELL_BLIZZARD            = 55699,
 
-    SPELL_CLEAVE            = 19983,
-    SPELL_BESERK            = 26662,
+    SPELL_CLEAVE                = 19983,
+    SPELL_BESERK                = 26662,
 
-    SPELL_SUMMON_BLIZZ_1    = 28560, // script effect 100yd
-    SPELL_SUMMON_BLIZZ_2    = 29969, // dummy
+    SPELL_SUMMON_BLIZZ_1        = 28560, // script effect 100yd
+    SPELL_SUMMON_BLIZZ_2        = 29969, // dummy
 
-    GO_ICE_BLOCK            = 181247 // Not sure
+    SPELL_HOVER                 = 57764,
+    SPELL_WING_BUFFET           = 29328,
+
+    GO_ICE_BLOCK                = 181247, // Not sure
+    POINT_HOME                  = 0
 };
+
+struct MANGOS_DLL_DECL npc_sapphiron_wing_buffetAI : public ScriptedAI
+{
+    npc_sapphiron_wing_buffetAI(Creature* pCreature) : ScriptedAI(pCreature)
+    {
+        m_pInstance = (instance_naxxramas*)pCreature->GetInstanceData();
+        Reset();
+    }
+
+    instance_naxxramas* m_pInstance;
+    bool bActivated;
+    uint32 m_uiBuffetHeartbeat;
+
+    void Reset() 
+    {
+        SetCombatMovement(false);
+        bActivated = false;
+        m_uiBuffetHeartbeat = 2000;
+    }
+
+    void SpellHit(Unit* pCaster, SpellEntry* pSpell)
+    {
+        if (pSpell->Id == SPELL_FROSTBREATH_VISUAL)
+        {
+            DoCastSpellIfCan(m_creature, SPELL_FROSTBREATH_EFFECT, CAST_TRIGGERED);
+            bActivated = false;
+        }
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (!bActivated)
+            return;
+
+        if (m_uiBuffetHeartbeat < uiDiff)
+        {
+            DoCastSpellIfCan(m_creature, SPELL_WING_BUFFET);
+            m_uiBuffetHeartbeat = 2000;
+        }
+        else
+            m_uiBuffetHeartbeat -= uiDiff;
+    }
+};
+
+CreatureAI* GetAI_npc_sapphiron_wing_buffet(Creature* pCreature)
+{
+    return new npc_sapphiron_wing_buffetAI(pCreature);
+}
 
 struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 {
@@ -82,6 +137,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
     uint32 m_uiLandTimer;
     uint32 m_uiRespawnTime;
     bool m_bLandoff;
+    bool m_bIsWalking;
     std::set<uint64> m_lIceBlocks;
 
     void Reset()
@@ -99,6 +155,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
         m_uiPhase = 1;
         m_uiIceboltCount = 0;
         m_bLandoff = false;
+        m_bIsWalking = false;
 
         DespawnIceBlocks();
     }
@@ -138,11 +195,33 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             m_pInstance->SetData(TYPE_SAPPHIRON, FAIL);
     }
 
+    void MovementInform(uint32 uiMotionType, uint32 uiPointId)
+    {
+        if (uiMotionType != POINT_MOTION_TYPE)
+            return;
+
+        if (uiPointId == POINT_HOME)
+        {
+            m_creature->GetMotionMaster()->Clear(true, true);
+            m_creature->GetMotionMaster()->MoveIdle();
+            m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LIFTOFF);
+            DoCast(m_creature, SPELL_HOVER, true);
+            m_uiIceboltTimer = 4000;
+            m_uiIceboltCount = 0;
+            m_bLandoff = false;
+            m_bIsWalking = false;
+            DoScriptText(EMOTE_FLY, m_creature);
+            Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_SAPPHIRONS_WING_BUFFET));
+            if (pWingBuffet && pWingBuffet->AI())
+                ((npc_sapphiron_wing_buffetAI*)pWingBuffet->AI())->bActivated = true;
+        }
+    }
+
     void SpellHitTarget(Unit *target, const SpellEntry *spell)
     {
         switch(spell->Id)
         {
-            case SPELL_FROST_BREATH:
+            case SPELL_FROSTBREATH:
                 if (target->HasAura(SPELL_ICEBOLT))
                     target->RemoveAurasDueToSpell(SPELL_ICEBOLT);
                 break;
@@ -161,7 +240,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             else m_uiRespawnTime -= uiDiff;
         } 
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim() || m_bIsWalking)
             return;
 
         if (m_uiBeserkTimer < uiDiff)
@@ -219,18 +298,16 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 
             if (m_creature->GetHealthPercent() > 10.0f)
             {
-                if (m_uiFlyTimer < uiDiff)
+                if (m_uiFlyTimer < uiDiff && m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() != POINT_MOTION_TYPE)
                 {
                     m_uiPhase = 2;
                     m_creature->InterruptNonMeleeSpells(false);
-                    m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LIFTOFF);
-                    m_creature->GetMotionMaster()->Clear(false);
-                    m_creature->GetMotionMaster()->MoveIdle();
-                    m_creature->SetHover(true);
-                    m_uiIceboltTimer = 4000;
-                    m_uiIceboltCount = 0;
-                    m_bLandoff = false;
-                    DoScriptText(EMOTE_FLY, m_creature);
+                    float fDestX, fDestY, fDestZ;
+                    m_creature->GetRespawnCoord(fDestX, fDestY, fDestZ);
+                    m_creature->GetMotionMaster()->Clear(true, true);
+                    m_creature->GetMotionMaster()->MovePoint(POINT_HOME, fDestX, fDestY, fDestZ);
+                    m_bIsWalking = true;
+                    return;
                 }
                 else
                     m_uiFlyTimer -= uiDiff;
@@ -278,8 +355,8 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                     {
                         m_uiPhase = 1;
                         m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LAND);
-                        m_creature->SetHover(false);
-                        m_creature->GetMotionMaster()->Clear(false);
+                        m_creature->RemoveAurasDueToSpell(SPELL_HOVER);
+                        m_creature->GetMotionMaster()->Clear(true, true);
                         m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
                         m_uiFlyTimer = 45000;
                         DoScriptText(EMOTE_GROUND, m_creature);
@@ -291,12 +368,11 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                 {
                     if (m_uiFrostBreathTimer < uiDiff)
                     {
-                        if (DoCastSpellIfCan(m_creature, SPELL_FROST_BREATH) == CAST_OK)
-                        {
-                            DespawnIceBlocks();
-                            m_uiLandTimer = 4000;
-                            m_bLandoff = true;
-                        }
+                        if (Unit* pWingBuffet = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_SAPPHIRONS_WING_BUFFET)))
+                            DoCastSpellIfCan(pWingBuffet, SPELL_FROSTBREATH_VISUAL, CAST_TRIGGERED);
+                        DespawnIceBlocks();
+                        m_uiLandTimer = 4000;
+                        m_bLandoff = true;
                     }
                     else
                         m_uiFrostBreathTimer -= uiDiff;
@@ -317,5 +393,10 @@ void AddSC_boss_sapphiron()
     NewScript = new Script;
     NewScript->Name = "boss_sapphiron";
     NewScript->GetAI = &GetAI_boss_sapphiron;
+    NewScript->RegisterSelf();
+
+    NewScript = new Script;
+    NewScript->Name = "npc_sapphiron_wing_buffet";
+    NewScript->GetAI = &GetAI_npc_sapphiron_wing_buffet;
     NewScript->RegisterSelf();
 }

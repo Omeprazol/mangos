@@ -95,9 +95,9 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`
 
 ####################   boss_sapphiron    #########################################################
 
--- Sapphiron - unable to attack/be attacked while spawed (invisible)
+-- Sapphiron - unable to attack/be attacked while spawned (invisible)
 UPDATE creature_template SET
-unit_flags = unit_flags | 0x00000002 | 0x00000100 | 0x00000002
+unit_flags = unit_flags | 0x00000002 | 0x00000100
 WHERE entry IN (29991,15989);
 
 -- Sapphiron Birth
@@ -111,6 +111,14 @@ DELETE FROM areatrigger_scripts WHERE entry IN (4167, 4120)
 INSERT INTO areatrigger_scripts VALUES
 (4167, 'at_naxxramas'),
 (4120, 'at_naxxramas');
+
+-- Sapphiron - unable to attack/be attacked while spawed (invisible)
+UPDATE creature_template SET ScriptName = 'npc_sapphiron_wing_buffet' WHERE entry IN (17025);
+
+-- Wing Buffet spawned at the center of the Sapphiron`s Lair
+DELETE FROM `creature` WHERE id = 17025;
+INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
+('11688072','17025','533','3','1','0','0','3522.39','-5236.78','137.709','4.50295','25','5','0','8','0','0','0');
 
 /* clean udb 390 spawn
 DELETE FROM creature WHERE id = 15989;
