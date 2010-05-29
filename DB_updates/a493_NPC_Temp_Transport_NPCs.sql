@@ -4,7 +4,6 @@
 # That isn't propely way, I know. But I added these npcs into neutral place - The Argent Vanguard.
 # Here you've got how it looks like -> http://img188.imageshack.us/f/92194420.jpg/
 
-
 DELETE FROM creature WHERE guid IN (3034501,3034401,3230201,2979901,3125901,3082501,3082401,3230101,2979501,3126101);
 INSERT INTO creature VALUES
 (3034501,30345,571,1,1,0,1007,6115.17,-17.2893,383.511,5.41453,300,0,0,5342,0,0,0),
@@ -18,6 +17,10 @@ INSERT INTO creature VALUES
 (3082401,30824,571,1,1,0,1884,6119.58,-33.5227,383.511,2.34753,300,0,0,21368,0,0,0),
 (3230101,32301,571,1,1,0,996,6121.4,-31.6183,383.511,2.29772,300,0,0,630000,0,0,0);
 
+UPDATE creature_template SET 
+unit_flags=unit_flags|2,
+AIName='EventAI'
+WHERE entry IN (29795,32301,30824,30825,31261,30345,30344,32302,29799,31259);
 
 DELETE FROM creature_ai_scripts WHERE creature_id IN (29795,32301,30824,30825,31261,30345,30344,32302,29799,31259);
 INSERT INTO creature_ai_scripts VALUES
