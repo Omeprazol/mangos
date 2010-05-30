@@ -1272,17 +1272,15 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(m_caster, 45088, true);
                     return;
                 }
-                case 45449:
+                case 45449:                                 // Arcane Prisoner Rescue triggering summon and giving Q credit
                 {
-                    // Arcane Prisoner Rescue triggering summon and giving Q credit
                     if(m_caster->GetTypeId() == TYPEID_PLAYER)
                         m_caster->CastSpell(m_caster, ((((Player*)m_caster)->GetTeam() == ALLIANCE) ? 45448 : 45446), true);
 
                     return;
                 }
-                case 45451:
+                case 45451:                                 // Heartstone Visual - despawn after "teleporting"
                 {
-                    // Heartstone Visual - despawn after "teleporting"
                     if(m_caster->GetTypeId() == TYPEID_UNIT)
                         ((Creature*)m_caster)->ForcedDespawn();
                     
@@ -1387,9 +1385,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     return;
                 }
-                case 46605:
+                case 46605:                                 // Darkness of a Thousand Souls 
                 {
-                    // Darkness of a Thousand Souls (EffectBasePoint[2] points at wrong spell 45656, so i has to be hacked)
+                    // (EffectBasePoint[2] points at wrong spell 45656, so i has to be hacked)
                     // Can be also moved to Spell::cast()
                     AddTriggeredSpell(45657);
                     return;
@@ -2632,33 +2630,24 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 m_caster->CastCustomSpell(m_caster, 45470, &bp, NULL, NULL, true);
                 return;
             }
-            switch(m_spellInfo->Id)
-            {
                 // Death Grip
-                case 49560:
-                case 49576:
+            else if (m_spellInfo->Id == 49576)
                 {
-                    if (!unitTarget || !m_caster)
+                if (!unitTarget)
                         return;
 
-                    float x = m_caster->GetPositionX();
-                    float y = m_caster->GetPositionY();
-                    float z = m_caster->GetPositionZ()+1;
-                    float orientation = unitTarget->GetOrientation();
-
-                    m_caster->CastSpell(unitTarget,51399,true,NULL);
-
-                    if(unitTarget->GetTypeId() != TYPEID_PLAYER)
-                    {
-                        unitTarget->GetMap()->CreatureRelocation((Creature*)unitTarget,x,y,z,orientation);
-                        ((Creature*)unitTarget)->SendMonsterMove(x, y, z, SPLINETYPE_NORMAL, SPLINEFLAG_UNKNOWN11, 1);
+                m_caster->CastSpell(unitTarget, 49560, true);
+                return;
                     }
-                    else
-                        unitTarget->NearTeleportTo(x,y,z,orientation,false);
+            else if (m_spellInfo->Id == 49560)
+            {
+                if (!unitTarget)
+                    return;
 
+                uint32 spellId = m_spellInfo->CalculateSimpleValue(EFFECT_INDEX_0);
+                unitTarget->CastSpell(m_caster->GetPositionX(), m_caster->GetPositionY(), m_caster->GetPositionZ(), spellId, true);
                     return;
                 }
-            }
             break;
         }
     }
@@ -2911,7 +2900,8 @@ void Spell::EffectTriggerMissileSpell(SpellEffectIndex effect_idx)
         DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "WORLD: cast Item spellId - %i", spellInfo->Id);
 
     m_caster->CastSpell(m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, spellInfo, true, m_CastItem, 0, m_originalCasterGUID);
-
+    // Create Dark Brewmaiden's Brew
+    // Dark Brewmaiden's Stun
     if (triggered_spell_id == 47345 || triggered_spell_id == 47340)
         if (unitTarget)
             unitTarget->CastSpell(unitTarget,triggered_spell_id,true);
