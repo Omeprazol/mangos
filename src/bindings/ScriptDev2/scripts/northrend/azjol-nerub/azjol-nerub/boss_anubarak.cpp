@@ -15,10 +15,10 @@
  */
 
 /* ScriptData
-SDName: boss_anubarak
-SD%Complete: 90 %
-SDComment: Says are not implemented.
-SDCategory: Azjol Nerub
+SDName: Boss_Anubarak
+SD%Complete: 20%
+SDComment:
+SDCategory: Azjol'NerubstrInstData
 EndScriptData */
 
 
@@ -107,7 +107,7 @@ struct MANGOS_DLL_DECL boss_anubarakAI : public ScriptedAI
     void Aggro(Unit *pWho)
     {
         DoScriptText(SAY_AGGRO, m_creature);
-        
+
         if (m_pInstance)
             m_pInstance->SetData(TYPE_ANUBARAK, IN_PROGRESS);
     }
