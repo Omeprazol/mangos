@@ -32,8 +32,7 @@ enum
     EMOTE_GROUND                = -1533161,
 
     SPELL_ICEBOLT               = 28522,
-    SPELL_FROSTBREATH           = 29318,
-    SPELL_FROSTBREATH_EFFECT    = 28524,
+    SPELL_FROSTBREATH           = 28524,
     SPELL_FROSTBREATH_VISUAL    = 30101,
     SPELL_SAPPHIRONS_WING_BUFFET= 29328,
 
@@ -77,23 +76,22 @@ struct MANGOS_DLL_DECL npc_sapphiron_wing_buffetAI : public ScriptedAI
     void Reset() 
     {
         SetCombatMovement(false);
-        bActivated = false;
         m_uiBuffetHeartbeat = 2000;
     }
 
     void SpellHit(Unit* pCaster, SpellEntry* pSpell)
     {
         if (pSpell->Id == SPELL_FROSTBREATH_VISUAL)
-        {
-            DoCastSpellIfCan(m_creature, SPELL_FROSTBREATH_EFFECT, CAST_TRIGGERED);
-            bActivated = false;
-        }
+            m_creature->ForcedDespawn();
     }
 
     void UpdateAI(const uint32 uiDiff)
     {
-        if (!bActivated)
+        if (m_pInstance && m_pInstance->GetData(TYPE_SAPPHIRON) != IN_PROGRESS)
+        {
+            m_creature->ForcedDespawn();
             return;
+        }
 
         if (m_uiBuffetHeartbeat < uiDiff)
         {
@@ -174,6 +172,58 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
         m_lIceBlocks.clear();
     }
 
+    //!!! Frost Breath HACK!!!
+    // Since GOs are not valid obstacle for LoS we need this
+    bool IsBehindIceBlock(Unit* pVictim)
+    {
+        // get `iceblockers`
+         std::list<Unit*> lBlockList;
+         ThreatList const& tList = m_creature->getThreatManager().getThreatList();
+         for (ThreatList::const_iterator i = tList.begin();i != tList.end(); ++i)
+         {
+             Unit* pUnit = Unit::GetUnit(*m_creature, (*i)->getUnitGuid());
+             if (pUnit && pUnit->HasAura(SPELL_ICEBOLT))
+                 lBlockList.push_back(pUnit);
+         }
+
+         if (lBlockList.empty())
+             return false;
+
+         float fVictimX, fVictimY, fVictimZ;
+         float fSapphironX, fSapphironY, fSapphironZ;
+         m_creature->GetPosition(fSapphironX, fSapphironY, fSapphironZ);
+         pVictim->GetPosition(fVictimX, fVictimY, fVictimZ);
+         for (std::list<Unit*>::iterator itr = lBlockList.begin(); itr != lBlockList.end(); ++itr)
+         {
+             float fDistToVictim = m_creature->GetDistance(pVictim);
+             float fDistToBlocker = m_creature->GetDistance(*itr);
+
+             // if victim stands between blocker and sapphiron or too far from blocker
+             if (fDistToVictim < fDistToBlocker || fDistToBlocker + 5.0f < fDistToVictim)
+                 continue;
+
+             float fBlockX, fBlockY, fBlockZ;
+             float a = 0.0f;
+             float b = 0.0f;
+             (*itr)->GetPosition(fBlockX, fBlockY, fBlockZ);
+             // y = ax + b
+             // now we are looking for line eqation connecting potencial victim and sapphiron
+             a = (fSapphironX - fVictimX)/(fSapphironY - fVictimY);
+             b = fSapphironX - a * fSapphironY;
+             // if we now have all neccessary parameters lets check if blocking unit stands approximetly on line
+             if ((fBlockX - a * fBlockY - b) < 3.0f && (fBlockX - a * fBlockY - b) > -3.0f)
+                 return true;
+         }
+         return false;
+    }
+
+    //!!! Frost Breath HACK!!!
+    void DamageDeal(Unit* pDoneTo, uint32& uiDamage)
+    {
+        if (IsBehindIceBlock(pDoneTo))
+            uiDamage = 0;
+    }
+
     void Aggro(Unit* pWho)
     {
         if (m_pInstance)
@@ -192,7 +242,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
     void JustReachedHome()
     {
         if (m_pInstance)
-            m_pInstance->SetData(TYPE_SAPPHIRON, FAIL);
+            m_pInstance->SetData(TYPE_SAPPHIRON, NOT_STARTED);
     }
 
     void MovementInform(uint32 uiMotionType, uint32 uiPointId)
@@ -212,20 +262,9 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             m_bIsWalking = false;
             DoScriptText(EMOTE_FLY, m_creature);
             Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_SAPPHIRONS_WING_BUFFET));
-            if (pWingBuffet && pWingBuffet->AI())
-                ((npc_sapphiron_wing_buffetAI*)pWingBuffet->AI())->bActivated = true;
+            if (pWingBuffet && !pWingBuffet->isAlive())
+                pWingBuffet->Respawn();
         }
-    }
-
-    void SpellHitTarget(Unit *target, const SpellEntry *spell)
-    {
-        switch(spell->Id)
-        {
-            case SPELL_FROSTBREATH:
-                if (target->HasAura(SPELL_ICEBOLT))
-                    target->RemoveAurasDueToSpell(SPELL_ICEBOLT);
-                break;
-        };
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -271,9 +310,12 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             {
                 if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
                 {
-                    float fDestX, fDestY, fDestZ;
-                    pTarget->GetPosition(fDestX, fDestY, fDestZ);
-                    m_creature->CastSpell(fDestX, fDestY, fDestZ, m_bIsRegularMode ? SPELL_BLIZZARD : H_SPELL_BLIZZARD, false, NULL, NULL, m_creature->GetGUID());
+                    if (Player* pPlayer = pTarget->GetCharmerOrOwnerPlayerOrPlayerItself())
+                    {
+                        float fDestX, fDestY, fDestZ;
+                        pPlayer->GetPosition(fDestX, fDestY, fDestZ);
+                        m_creature->CastSpell(fDestX, fDestY, fDestZ, m_bIsRegularMode ? SPELL_BLIZZARD : H_SPELL_BLIZZARD, false, NULL, NULL, m_creature->GetGUID());
+                    }
                     m_uiBlizzardTimer = 20000;
                 }
             }
@@ -354,10 +396,15 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                     if (m_uiLandTimer < uiDiff)
                     {
                         m_uiPhase = 1;
+                        DoCastSpellIfCan(m_creature, SPELL_FROSTBREATH, CAST_TRIGGERED);
+                        if (Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_SAPPHIRONS_WING_BUFFET)))
+                            pWingBuffet->ForcedDespawn();
+
                         m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LAND);
                         m_creature->RemoveAurasDueToSpell(SPELL_HOVER);
                         m_creature->GetMotionMaster()->Clear(true, true);
                         m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+                        DespawnIceBlocks();
                         m_uiFlyTimer = 45000;
                         DoScriptText(EMOTE_GROUND, m_creature);
                     }
@@ -370,9 +417,9 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                     {
                         if (Unit* pWingBuffet = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_SAPPHIRONS_WING_BUFFET)))
                             DoCastSpellIfCan(pWingBuffet, SPELL_FROSTBREATH_VISUAL, CAST_TRIGGERED);
-                        DespawnIceBlocks();
-                        m_uiLandTimer = 4000;
+                        m_uiLandTimer = 9000;
                         m_bLandoff = true;
+                        m_uiFrostBreathTimer = 7000;
                     }
                     else
                         m_uiFrostBreathTimer -= uiDiff;
@@ -389,14 +436,14 @@ CreatureAI* GetAI_boss_sapphiron(Creature* pCreature)
 
 void AddSC_boss_sapphiron()
 {
-    Script* NewScript;
-    NewScript = new Script;
-    NewScript->Name = "boss_sapphiron";
-    NewScript->GetAI = &GetAI_boss_sapphiron;
-    NewScript->RegisterSelf();
+    Script* newscript;
+    newscript = new Script;
+    newscript->Name = "boss_sapphiron";
+    newscript->GetAI = &GetAI_boss_sapphiron;
+    newscript->RegisterSelf();
 
-    NewScript = new Script;
-    NewScript->Name = "npc_sapphiron_wing_buffet";
-    NewScript->GetAI = &GetAI_npc_sapphiron_wing_buffet;
-    NewScript->RegisterSelf();
+    newscript = new Script;
+    newscript->Name = "npc_sapphiron_wing_buffet";
+    newscript->GetAI = &GetAI_npc_sapphiron_wing_buffet;
+    newscript->RegisterSelf();
 }

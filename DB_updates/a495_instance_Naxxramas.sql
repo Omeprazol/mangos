@@ -107,18 +107,22 @@ INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `positi
 UPDATE gameobject_template SET size = 1.5 WHERE entry = 181356;
 
 -- FrostWyrm areatriggers (triggers Intro event reset/start)
-DELETE FROM areatrigger_scripts WHERE entry IN (4167, 4120)
+DELETE FROM areatrigger_scripts WHERE entry IN (4167, 4120);
 INSERT INTO areatrigger_scripts VALUES
 (4167, 'at_naxxramas'),
 (4120, 'at_naxxramas');
 
 -- Sapphiron - unable to attack/be attacked while spawed (invisible)
-UPDATE creature_template SET ScriptName = 'npc_sapphiron_wing_buffet' WHERE entry IN (17025);
+UPDATE creature_template SET 
+faction_A = 21,
+faction_H = 21,
+ScriptName = 'npc_sapphiron_wing_buffet'
+WHERE entry IN (17025);
 
 -- Wing Buffet spawned at the center of the Sapphiron`s Lair
 DELETE FROM `creature` WHERE id = 17025;
 INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
-('11688072','17025','533','3','1','0','0','3522.39','-5236.78','137.709','4.50295','25','5','0','8','0','0','0');
+('11688072','17025','533','3','1','0','0','3522.39','-5236.78','137.709','4.50295','604800','5','0','8','0','0','0');
 
 /* clean udb 390 spawn
 DELETE FROM creature WHERE id = 15989;
