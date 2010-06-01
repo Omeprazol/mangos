@@ -22,6 +22,8 @@ SDCategory: Storm Peaks
 EndScriptData */
 
 /* ContentData
+mob_saronite_mineslave
+mob_captive_mechagnome
 mob_lightning_forge_credit
 npc_loklira_the_crone
 npc_roxi_ramrocket
@@ -29,6 +31,69 @@ npc_frostborn_scout
 EndContentData */
 
 #include "precompiled.h"
+
+/*######
+## mob_saronite_mine_slave (31397)
+######*/
+
+enum
+{
+    QUEST_SLAVES_TO_SARNOITE_A       = 13300, //Alliance version
+    SPELL_DESPAWN_SELF               = 43014,
+    NPC_SLAVES_TO_SARONITE_CREDIT    = 31866,
+    QUEST_SLAVES_TO_SARNOITE_H       = 13302,  //Horde version
+    SARONITE_SLAVE_TEXTID            = 14068,
+    SARONITE_SLAVE_TEXT1             = -1999000,
+    SARONITE_SLAVE_TEXT2             = -1999001,
+    SARONITE_SLAVE_TEXT3             = -1999002
+};
+
+#define GOSSIP_EVENT_FREE      "Go on, you're free. Get out of here!"
+
+bool GossipHello_mob_mine_slave(Player* pPlayer, Creature* pCreature)
+{
+    if (pCreature->isQuestGiver())
+        pPlayer->PrepareQuestMenu(pCreature->GetGUID());
+
+    if ( (pPlayer->GetQuestStatus(QUEST_SLAVES_TO_SARNOITE_A) == QUEST_STATUS_INCOMPLETE) ||
+        (pPlayer->GetQuestStatus(QUEST_SLAVES_TO_SARNOITE_H) == QUEST_STATUS_INCOMPLETE) )
+        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_EVENT_FREE, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
+
+    pPlayer->SEND_GOSSIP_MENU(SARONITE_SLAVE_TEXTID, pCreature->GetGUID());
+    return true;
+}
+
+bool GossipSelect_mob_mine_slave(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
+{
+    if (uiAction == GOSSIP_ACTION_INFO_DEF)
+    {
+        pPlayer->CLOSE_GOSSIP_MENU();
+
+        switch (urand(0, 10))
+        {
+            case 0:
+                switch(urand(1, 3))
+                {
+                    case 1: DoScriptText(SARONITE_SLAVE_TEXT1, pCreature); break;
+                    case 2: DoScriptText(SARONITE_SLAVE_TEXT2, pCreature); break;
+                    case 3: DoScriptText(SARONITE_SLAVE_TEXT3, pCreature); break;
+                }
+                pCreature->CastSpell(pCreature, SPELL_DESPAWN_SELF, true);
+                break;
+
+            case 1:
+                pCreature->setFaction(16);
+                pCreature->AI()->AttackStart(pPlayer);
+                break;
+
+            default:
+                pPlayer->KilledMonsterCredit(NPC_SLAVES_TO_SARONITE_CREDIT, pCreature->GetGUID());
+                pCreature->CastSpell(pCreature, SPELL_DESPAWN_SELF, true);
+                break;
+        }
+    }
+    return true;
+}
 
 /*######
 ## mob_captive_mechagnome
@@ -438,11 +503,10 @@ bool GossipSelect_npc_roxi_ramrocket(Player* pPlayer, Creature* pCreature, uint3
 
 enum
 {
-    QUEST_THEY_TOOK_OUR_MEN    = 12843,
-    NPC_GOBLIN_PRISONER     = 29466,
-    SPELL_DESPAWN_SELF      = 43014,
-    SAY_THANKS_1            = -1999778,
-    SAY_THANKS_2            = -1999777
+    QUEST_THEY_TOOK_OUR_MEN     = 12843,
+    NPC_GOBLIN_PRISONER         = 29466,
+    SAY_THANKS_1                = -1999778,
+    SAY_THANKS_2                = -1999777
 };
 
 bool GOHello_go_rusty_cage(Player* pPlayer, GameObject* pGo)
@@ -462,6 +526,12 @@ bool GOHello_go_rusty_cage(Player* pPlayer, GameObject* pGo)
 void AddSC_storm_peaks()
 {
     Script* newscript;
+
+    newscript = new Script;
+    newscript->Name = "mob_mine_slave";
+    newscript->pGossipHello =  &GossipHello_mob_mine_slave;
+    newscript->pGossipSelect = &GossipSelect_mob_mine_slave;
+    newscript->RegisterSelf();
 
     newscript = new Script;
     newscript->Name = "go_rusty_cage";
