@@ -142,3 +142,9 @@ UPDATE `creature_template` SET `speed_run` =0.1,  `speed_walk` = 0.2 WHERE `entr
 DELETE FROM `creature` WHERE `id` IN (16506);
 UPDATE creature_template SET `minmana` ='58750', `maxmana` = '58750' WHERE `entry` IN (29273);
 */
+
+####################   boss_grobbulus    #########################################################
+
+-- script names
+UPDATE `creature_template` SET `ScriptName` = 'npc_grobbulus_poison_cloud' WHERE `entry` = 16363;
+UPDATE `creature_template` SET `ScriptName` = 'boss_grobbulus' WHERE `entry` = 15931;
