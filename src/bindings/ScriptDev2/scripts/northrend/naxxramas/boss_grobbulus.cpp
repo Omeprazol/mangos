@@ -87,10 +87,13 @@ struct MANGOS_DLL_DECL boss_grobbulusAI : public ScriptedAI
     {
         if(spell->Id == SPELL_SLIMESPRAY || spell->Id == SPELL_SLIMESPRAY_H)
         {
+		
+			if (target->GetTypeId() != TYPEID_PLAYER) 
+				return; 
+
             if (Creature* pTemp = m_creature->SummonCreature(NPC_SLIME, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 1000))
                 if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                 {
-                    pTemp->AddThreat(pTarget,0.0f);
                     pTemp->AI()->AttackStart(pTarget);
                 }
         }
