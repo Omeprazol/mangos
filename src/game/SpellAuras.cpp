@@ -7675,7 +7675,7 @@ void Aura::PeriodicTick()
 
             pCaster->ProcDamageAndSpell(m_target, procAttacker, procVictim, PROC_EX_NORMAL_HIT, pdamage, BASE_ATTACK, GetSpellProto());
 
-            pCaster->DealDamage(m_target, pdamage, &cleanDamage, DOT, GetSpellSchoolMask(GetSpellProto()), GetSpellProto(), true)
+            pCaster->DealDamage(m_target, pdamage, &cleanDamage, DOT, GetSpellSchoolMask(GetSpellProto()), GetSpellProto(), true);
 
             break;
         }
