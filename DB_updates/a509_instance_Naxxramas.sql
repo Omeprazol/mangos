@@ -95,9 +95,10 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`
 
 ####################   boss_sapphiron    #########################################################
 
--- Sapphiron - unable to attack/be attacked while spawned (invisible)
+-- Sapphiron - unable to attack/be attacked while spawned (invisible), also immune to taunt
 UPDATE creature_template SET
-unit_flags = unit_flags | 0x00000002 | 0x00000100
+unit_flags = unit_flags | 0x00000002 | 0x00000100,
+flags_extra = flags_extra | 256
 WHERE entry IN (29991,15989);
 
 -- Sapphiron Birth
@@ -112,17 +113,18 @@ INSERT INTO areatrigger_scripts VALUES
 (4167, 'at_naxxramas'),
 (4120, 'at_naxxramas');
 
--- Sapphiron - unable to attack/be attacked while spawed (invisible)
+-- Wing Buffet - unable to attack/be attacked while spawed (invisible)
 UPDATE creature_template SET 
 faction_A = 21,
 faction_H = 21,
-ScriptName = 'npc_sapphiron_wing_buffet'
+unit_flags = unit_flags |2|256,
+AIName = 'EventAI',
+ScriptName = ''
 WHERE entry IN (17025);
 
--- Wing Buffet spawned at the center of the Sapphiron`s Lair
-DELETE FROM `creature` WHERE id = 17025;
-INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
-('11688072','17025','533','3','1','0','0','3522.39','-5236.78','137.709','4.50295','604800','5','0','8','0','0','0');
+DELETE FROM creature_ai_scripts WHERE creature_id = 17025;
+INSERT INTO creature_ai_scripts VALUES
+(1702501,17025,1,0,100,7, 0,0,2000,2000, 11,29328,0,1, 0,0,0,0, 0,0,0,0, 'Sapphirons Wing Buffet - spell Wing Buffet'); 
 
 -- Activate/Deactivate Blizzard
 DELETE FROM spell_script_target WHERE entry IN (29969,29970);

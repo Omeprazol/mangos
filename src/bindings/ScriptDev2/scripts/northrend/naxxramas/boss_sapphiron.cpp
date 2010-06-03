@@ -19,6 +19,12 @@ SDName: Boss_Sapphiron
 SD%Complete: 60
 SDComment: Place Holder
 SDCategory: Naxxramas
+
+przemratajczak:
+ToDo:
+* hack - with dmg from frostbreath
+* 
+* maybe somehow simplify intro?
 EndScriptData */
 
 #include "precompiled.h"
@@ -32,6 +38,7 @@ enum
     EMOTE_GROUND                = -1533161,
 
     SPELL_ICEBOLT               = 28522,
+    //SPELL_ICEBOLT             = 28526,    // eff 77 implicit 1/0 but with casttime (not used)
     SPELL_FROSTBREATH           = 28524,
     SPELL_FROSTBREATH_VISUAL    = 30101,
     SPELL_SAPPHIRONS_WING_BUFFET= 29328,
@@ -45,68 +52,25 @@ enum
     SPELL_TAIL_SWEEP            = 55697,
     H_SPELL_TAIL_SWEEP          = 55696,
 
-    SPELL_BLIZZARD              = 28547,
-    H_SPELL_BLIZZARD            = 55699,
-
     SPELL_CLEAVE                = 19983,
     SPELL_BESERK                = 26662,
 
-    SPELL_SUMMON_BLIZZ_1        = 28560, // script effect 100yd
-    SPELL_SUMMON_BLIZZ_2        = 29969, // dummy
+    //SPELL_SUMMON_BLIZZARD     = 28560,    // script effect 100yd (not used)
+    SPELL_ACTIVATE_BLIZZARD     = 29969,    // dummy
+    SPELL_DEACTIVATE_BLIZZARD   = 29970,
+    SPELL_SAPPHIRON_DIES        = 29357,    // dummy
+    SPELL_SAPPHIRON_ACHI_CHECK  = 60539,    // script effect
 
     SPELL_HOVER                 = 57764,
-    SPELL_WING_BUFFET           = 29328,
 
-    GO_ICE_BLOCK                = 181247, // Not sure
-    POINT_HOME                  = 0
+    POINT_HOME                  = 0,
+    NPC_WING_BUFFET             = 17025,
+
+    PHASE_FIGHT_ON_GROUND       = 0,
+    PHASE_RETURN_TO_THE_CENTER  = 1,
+    PHASE_ICEBOLTS              = 2,
+    PHASE_LANDING               = 3
 };
-
-struct MANGOS_DLL_DECL npc_sapphiron_wing_buffetAI : public ScriptedAI
-{
-    npc_sapphiron_wing_buffetAI(Creature* pCreature) : ScriptedAI(pCreature)
-    {
-        m_pInstance = (instance_naxxramas*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    instance_naxxramas* m_pInstance;
-    bool bActivated;
-    uint32 m_uiBuffetHeartbeat;
-
-    void Reset() 
-    {
-        SetCombatMovement(false);
-        m_uiBuffetHeartbeat = 2000;
-    }
-
-    void SpellHit(Unit* pCaster, SpellEntry* pSpell)
-    {
-        if (pSpell->Id == SPELL_FROSTBREATH_VISUAL)
-            m_creature->ForcedDespawn();
-    }
-
-    void UpdateAI(const uint32 uiDiff)
-    {
-        if (m_pInstance && m_pInstance->GetData(TYPE_SAPPHIRON) != IN_PROGRESS)
-        {
-            m_creature->ForcedDespawn();
-            return;
-        }
-
-        if (m_uiBuffetHeartbeat < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature, SPELL_WING_BUFFET);
-            m_uiBuffetHeartbeat = 2000;
-        }
-        else
-            m_uiBuffetHeartbeat -= uiDiff;
-    }
-};
-
-CreatureAI* GetAI_npc_sapphiron_wing_buffet(Creature* pCreature)
-{
-    return new npc_sapphiron_wing_buffetAI(pCreature);
-}
 
 struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 {
@@ -114,17 +78,16 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
     {
         m_pInstance = (instance_naxxramas*)pCreature->GetInstanceData();
         m_bIsRegularMode = pCreature->GetMap()->IsRegularDifficulty();
-        m_uiIceboltCountMax = m_bIsRegularMode ? 2 : 3;
         Reset();
     }
 
     instance_naxxramas* m_pInstance;
     bool m_bIsRegularMode;
+    bool m_bCastingFrostBreath; // hack part
+    float fHomeX, fHomeY, fHomeZ;
 
-    uint32 m_uiIceboltCount;
-    uint32 m_uiIceboltCountMax;
+    int8 m_iIceboltCount;
     uint32 m_uiIceboltTimer;
-    uint32 m_uiFrostBreathTimer;
     uint32 m_uiLifeDrainTimer;
     uint32 m_uiBlizzardTimer;
     uint32 m_uiTailSweepTimer;
@@ -134,42 +97,24 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
     uint32 m_uiPhase;
     uint32 m_uiLandTimer;
     uint32 m_uiRespawnTime;
-    bool m_bLandoff;
-    bool m_bIsWalking;
-    std::set<uint64> m_lIceBlocks;
+    uint64 m_uiWingBuffetGUID;
 
     void Reset()
     {
-        m_uiFrostBreathTimer = 7000;
-        m_uiLifeDrainTimer = 24000;
-        m_uiBlizzardTimer = 20000;
-        m_uiTailSweepTimer = 10000;
-        m_uiCleaveTimer = 10000;
-        m_uiFlyTimer = 45000;
-        m_uiIceboltTimer = 4000;
-        m_uiLandTimer = 2000;
-        m_uiRespawnTime = 22000;
-        m_uiBeserkTimer = 15*MINUTE*IN_MILLISECONDS;
-        m_uiPhase = 1;
-        m_uiIceboltCount = 0;
-        m_bLandoff = false;
-        m_bIsWalking = false;
-
-        DespawnIceBlocks();
-    }
-
-    void DespawnIceBlocks()
-    {
-        if (m_pInstance)
-        {
-            for (std::set<uint64>::const_iterator itr = m_lIceBlocks.begin(); itr != m_lIceBlocks.end(); ++itr)
-            {
-                if (GameObject* pIceBlock = m_pInstance->instance->GetGameObject(*itr))
-                    pIceBlock->Delete();
-            }
-        }
-
-        m_lIceBlocks.clear();
+        m_uiLifeDrainTimer  = 24000;
+        m_uiBlizzardTimer   = 10000;
+        m_uiTailSweepTimer  = 10000;
+        m_uiCleaveTimer     = 10000;
+        m_uiFlyTimer        = 45000;
+        m_uiIceboltTimer    = 4000;
+        m_uiLandTimer       = 2000;
+        m_uiRespawnTime     = 22000;
+        m_uiBeserkTimer     = 15*MINUTE*IN_MILLISECONDS;
+        m_uiPhase           = PHASE_FIGHT_ON_GROUND;
+        m_iIceboltCount     = 0;
+        m_uiWingBuffetGUID  = 0;
+        m_bCastingFrostBreath = false;
+        m_creature->GetRespawnCoord(fHomeX, fHomeY, fHomeZ);
     }
 
     //!!! Frost Breath HACK!!!
@@ -220,7 +165,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
     //!!! Frost Breath HACK!!!
     void DamageDeal(Unit* pDoneTo, uint32& uiDamage)
     {
-        if (IsBehindIceBlock(pDoneTo))
+        if (IsBehindIceBlock(pDoneTo) && m_bCastingFrostBreath)
             uiDamage = 0;
     }
 
@@ -235,6 +180,8 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 
     void JustDied(Unit* pKiller)
     {
+        DoCastSpellIfCan(m_creature, SPELL_DEACTIVATE_BLIZZARD, CAST_TRIGGERED);
+
         if (m_pInstance)
             m_pInstance->SetData(TYPE_SAPPHIRON, DONE);
     }
@@ -242,7 +189,10 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
     void JustReachedHome()
     {
         if (m_pInstance)
-            m_pInstance->SetData(TYPE_SAPPHIRON, NOT_STARTED);
+            m_pInstance->SetData(TYPE_SAPPHIRON, FAIL);
+
+        if (Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_uiWingBuffetGUID))
+            pWingBuffet->ForcedDespawn();
     }
 
     void MovementInform(uint32 uiMotionType, uint32 uiPointId)
@@ -257,18 +207,18 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LIFTOFF);
             DoCast(m_creature, SPELL_HOVER, true);
             m_uiIceboltTimer = 4000;
-            m_uiIceboltCount = 0;
-            m_bLandoff = false;
-            m_bIsWalking = false;
+            m_iIceboltCount = 0;
             DoScriptText(EMOTE_FLY, m_creature);
-            Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_SAPPHIRONS_WING_BUFFET));
-            if (pWingBuffet && !pWingBuffet->isAlive())
-                pWingBuffet->Respawn();
+            if (Creature* pWingBuffet = m_creature->SummonCreature(NPC_WING_BUFFET, fHomeX, fHomeY, fHomeZ, 0.0f, TEMPSUMMON_DEAD_DESPAWN, 0))
+                m_uiWingBuffetGUID = pWingBuffet->GetGUID();            
+            m_uiPhase = PHASE_ICEBOLTS;
         }
     }
 
     void UpdateAI(const uint32 uiDiff)
     {
+        // respawntime is calculated duration of GO_sapphirons birth special animation
+        // if sapphiron assemble is in progres TYPE_SAPPHIRON = SPECIAL
         if (m_pInstance && m_pInstance->GetData(TYPE_SAPPHIRON) == SPECIAL && m_creature->GetVisibility() == VISIBILITY_OFF)
         {
             if (m_uiRespawnTime < uiDiff)
@@ -276,155 +226,132 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                 m_creature->RemoveFlag(UNIT_FIELD_FLAGS, (UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_OOC_NOT_ATTACKABLE));
                 m_creature->SetVisibility(VISIBILITY_ON);
             }
-            else m_uiRespawnTime -= uiDiff;
+            else
+                m_uiRespawnTime -= uiDiff;
         } 
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim() || m_bIsWalking)
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
         if (m_uiBeserkTimer < uiDiff)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_BESERK) == CAST_OK)
-            {
-                m_uiBeserkTimer = 300000;
-                DoScriptText(EMOTE_ENRAGE, m_creature);
-            }
+            DoCastSpellIfCan(m_creature, SPELL_BESERK);
+            m_uiBeserkTimer = 300000;
+            DoScriptText(EMOTE_ENRAGE, m_creature);
         }
         else
             m_uiBeserkTimer -= uiDiff;
 
-        if (m_uiPhase == 1)
+        switch(m_uiPhase)
         {
-            if (m_uiLifeDrainTimer < uiDiff)
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                {
-                    if (DoCastSpellIfCan(pTarget, m_bIsRegularMode ? SPELL_LIFE_DRAIN : H_SPELL_LIFE_DRAIN) == CAST_OK)
-                        m_uiLifeDrainTimer = 24000;
-                }
-            }
-            else
-                m_uiLifeDrainTimer -= uiDiff;
+            case PHASE_FIGHT_ON_GROUND:
 
-            if (m_uiBlizzardTimer < uiDiff)
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
+                if (m_creature->GetHealthPercent() > 10.0f)
                 {
-                    if (Player* pPlayer = pTarget->GetCharmerOrOwnerPlayerOrPlayerItself())
+                    if (m_uiFlyTimer < uiDiff)
                     {
-                        float fDestX, fDestY, fDestZ;
-                        pPlayer->GetPosition(fDestX, fDestY, fDestZ);
-                        m_creature->CastSpell(fDestX, fDestY, fDestZ, m_bIsRegularMode ? SPELL_BLIZZARD : H_SPELL_BLIZZARD, false, NULL, NULL, m_creature->GetGUID());
+                        m_creature->InterruptNonMeleeSpells(false);
+                        m_creature->GetMotionMaster()->Clear(true, true);
+                        m_creature->GetMotionMaster()->MovePoint(POINT_HOME, fHomeX, fHomeY, fHomeZ);
+                        m_uiPhase = PHASE_RETURN_TO_THE_CENTER;
+                        return;
                     }
-                    m_uiBlizzardTimer = 20000;
+                    else
+                        m_uiFlyTimer -= uiDiff;
                 }
-            }
-            else
-                m_uiBlizzardTimer -= uiDiff;
 
-            if (m_uiCleaveTimer < uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE) == CAST_OK)
-                    m_uiCleaveTimer = urand(7000, 10000);
-            }
-            else
-                m_uiCleaveTimer -= uiDiff;
-
-            if (m_uiTailSweepTimer < uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_TAIL_SWEEP : H_SPELL_TAIL_SWEEP) == CAST_OK)
-                    m_uiTailSweepTimer = urand(10000, 15000);
-            }
-            else
-                m_uiTailSweepTimer -= uiDiff;
-
-            if (m_creature->GetHealthPercent() > 10.0f)
-            {
-                if (m_uiFlyTimer < uiDiff && m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() != POINT_MOTION_TYPE)
+                if (m_uiLifeDrainTimer < uiDiff)
                 {
-                    m_uiPhase = 2;
-                    m_creature->InterruptNonMeleeSpells(false);
-                    float fDestX, fDestY, fDestZ;
-                    m_creature->GetRespawnCoord(fDestX, fDestY, fDestZ);
-                    m_creature->GetMotionMaster()->Clear(true, true);
-                    m_creature->GetMotionMaster()->MovePoint(POINT_HOME, fDestX, fDestY, fDestZ);
-                    m_bIsWalking = true;
-                    return;
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                        DoCastSpellIfCan(pTarget, m_bIsRegularMode ? SPELL_LIFE_DRAIN : H_SPELL_LIFE_DRAIN);
+                    m_uiLifeDrainTimer = 24000;
                 }
                 else
-                    m_uiFlyTimer -= uiDiff;
-            }
+                    m_uiLifeDrainTimer -= uiDiff;
 
-            DoMeleeAttackIfReady();
-            EnterEvadeIfOutOfCombatArea(uiDiff);
-        }
-        else // Phase 2
-        {
-            if (m_uiIceboltCount < m_uiIceboltCountMax)
-            {
+                if (m_uiBlizzardTimer < uiDiff)
+                {
+                    DoCastSpellIfCan(m_creature, SPELL_ACTIVATE_BLIZZARD);
+                    m_uiBlizzardTimer = 20000;
+                }
+                else
+                    m_uiBlizzardTimer -= uiDiff;
+
+                if (m_uiCleaveTimer < uiDiff)
+                {
+                    DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE);
+                    m_uiCleaveTimer = urand(7000, 10000);
+                }
+                else
+                    m_uiCleaveTimer -= uiDiff;
+
+                if (m_uiTailSweepTimer < uiDiff)
+                {
+                    DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_TAIL_SWEEP : H_SPELL_TAIL_SWEEP);
+                    m_uiTailSweepTimer = urand(10000, 15000);
+                }
+                else
+                    m_uiTailSweepTimer -= uiDiff;
+
+                DoMeleeAttackIfReady();
+                EnterEvadeIfOutOfCombatArea(uiDiff);
+                break;
+
+            // walking back to the center, he is supposed to do nothing at this time
+            case PHASE_RETURN_TO_THE_CENTER:
+                return;
+
+            // casting ice bolts (2:3 n/h) than visual effect (ball) of Frost Breath and waiting untill ball reach ground
+            case PHASE_ICEBOLTS:
                 if (m_uiIceboltTimer < uiDiff)
                 {
                     if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                     {
-                        if (DoCastSpellIfCan(pTarget, SPELL_ICEBOLT) == CAST_OK)
+                        DoCastSpellIfCan(pTarget, SPELL_ICEBOLT);
+                        ++m_iIceboltCount;
+
+                        if (m_iIceboltCount >= (m_bIsRegularMode ? 2 : 3))
                         {
-                            float fx, fy, fz;
-                            pTarget->GetPosition(fx, fy, fz);
-
-                            if (GameObject *pIceBlock = pTarget->SummonGameobject(GO_ICE_BLOCK, fx, fy, fz, pTarget->GetOrientation(), 0))
-                                m_lIceBlocks.insert(pIceBlock->GetGUID());
-
-                            ++m_uiIceboltCount;
-
-                            if (m_uiIceboltCount == m_uiIceboltCountMax)
-                            {
-                                DoScriptText(EMOTE_BREATH, m_creature);
-                                m_uiFrostBreathTimer = 7000;
-                            }
-
-                            m_uiIceboltTimer = 4000;
+                            DoScriptText(EMOTE_BREATH, m_creature);
+                            if (Unit* pWingBuffet = Unit::GetUnit(*m_creature, m_uiWingBuffetGUID))
+                                DoCastSpellIfCan(m_creature, SPELL_FROSTBREATH_VISUAL, CAST_TRIGGERED);
+                            m_uiPhase = PHASE_LANDING;
+                            m_uiLandTimer = 7000;
                         }
                     }
+                    m_uiIceboltTimer = 4000;
                 }
                 else
                     m_uiIceboltTimer -= uiDiff;
-            }
-            else
-            {
-                if (m_bLandoff)
-                {
-                    if (m_uiLandTimer < uiDiff)
-                    {
-                        m_uiPhase = 1;
-                        DoCastSpellIfCan(m_creature, SPELL_FROSTBREATH, CAST_TRIGGERED);
-                        if (Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_SAPPHIRONS_WING_BUFFET)))
-                            pWingBuffet->ForcedDespawn();
+                break;
 
-                        m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LAND);
-                        m_creature->RemoveAurasDueToSpell(SPELL_HOVER);
-                        m_creature->GetMotionMaster()->Clear(true, true);
-                        m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
-                        DespawnIceBlocks();
-                        m_uiFlyTimer = 45000;
-                        DoScriptText(EMOTE_GROUND, m_creature);
-                    }
-                    else
-                        m_uiLandTimer -= uiDiff;
+            // when ball of Frostbreath reaches ground dmg and visual effect of AoE Frostbreath is triggered
+            // Sapphiron descends to the ground to rejoin melee fight
+            case PHASE_LANDING:
+
+                if (m_uiLandTimer < uiDiff)
+                {
+                    m_uiPhase = PHASE_FIGHT_ON_GROUND;
+                    // !!HACK!! bool variable needed to determine when DealDmg should be = 0.
+                    // dunno how to check which dmg was done by which spell to disable only
+                    // dmg form FrostBreath :/
+                    m_bCastingFrostBreath = true;
+                    DoCastSpellIfCan(m_creature, SPELL_FROSTBREATH, CAST_TRIGGERED);
+                    m_bCastingFrostBreath = false;
+                    if (Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_uiWingBuffetGUID))
+                        pWingBuffet->ForcedDespawn();
+
+                    m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LAND);
+                    m_creature->RemoveAurasDueToSpell(SPELL_HOVER);
+                    m_creature->GetMotionMaster()->Clear(true, true);
+                    m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+                    m_uiBlizzardTimer = 5000;
+                    m_uiFlyTimer = 45000;
+                    DoScriptText(EMOTE_GROUND, m_creature);
                 }
                 else
-                {
-                    if (m_uiFrostBreathTimer < uiDiff)
-                    {
-                        if (Unit* pWingBuffet = Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_SAPPHIRONS_WING_BUFFET)))
-                            DoCastSpellIfCan(pWingBuffet, SPELL_FROSTBREATH_VISUAL, CAST_TRIGGERED);
-                        m_uiLandTimer = 9000;
-                        m_bLandoff = true;
-                        m_uiFrostBreathTimer = 7000;
-                    }
-                    else
-                        m_uiFrostBreathTimer -= uiDiff;
-                }
-            }
+                    m_uiLandTimer -= uiDiff;
+                break;
         }
     }
 };
@@ -440,10 +367,5 @@ void AddSC_boss_sapphiron()
     newscript = new Script;
     newscript->Name = "boss_sapphiron";
     newscript->GetAI = &GetAI_boss_sapphiron;
-    newscript->RegisterSelf();
-
-    newscript = new Script;
-    newscript->Name = "npc_sapphiron_wing_buffet";
-    newscript->GetAI = &GetAI_npc_sapphiron_wing_buffet;
     newscript->RegisterSelf();
 }
