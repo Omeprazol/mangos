@@ -109,7 +109,6 @@ struct MANGOS_DLL_DECL instance_nexus : public ScriptedInstance
                 m_uiAnomalusGUID = pCreature->GetGUID();
                 break;
             case NPC_KERISTRASZA:
-                pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 m_uiKeristrazaGUID = pCreature->GetGUID();
                 break;
         }
@@ -191,12 +190,12 @@ struct MANGOS_DLL_DECL instance_nexus : public ScriptedInstance
                 if (pCreature->isAlive())
                 {
                     pCreature->RemoveAurasDueToSpell(SPELL_FROZEN_PRISON);
-                    pCreature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                    pCreature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE);
                 }
             }
         }
 
-        if (uiData == DONE)
+        if (uiData == DONE || uiData == SPECIAL)
         {
             OUT_SAVE_INST_DATA;
 
