@@ -324,7 +324,7 @@ void instance_naxxramas::SwitchDoor(uint32 uiData, uint64 doorGUID)
     }
 }
 
-bool instance_naxxramas::IsEncounterInProgress()
+bool instance_naxxramas::IsEncounterInProgress() const
 {
     for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
         if (m_auiEncounter[i] == IN_PROGRESS)
