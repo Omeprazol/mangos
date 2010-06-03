@@ -195,7 +195,7 @@ struct MANGOS_DLL_DECL instance_nexus : public ScriptedInstance
             }
         }
 
-        if (uiData == DONE || uiData == SPECIAL)
+        if (uiData == DONE)
         {
             OUT_SAVE_INST_DATA;
 

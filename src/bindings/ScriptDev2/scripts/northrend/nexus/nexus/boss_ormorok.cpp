@@ -96,9 +96,6 @@ struct MANGOS_DLL_DECL boss_ormorokAI : public ScriptedAI
         m_uiSummonTanglerTimer      = 17000;
         m_bIsFrenzy                 = false;
         m_bIsCrystalSpikes          = false;
-
-        if(m_pInstance)
-            m_pInstance->SetData(TYPE_ORMOROK, NOT_STARTED);
     }
 
     void Aggro(Unit* pWho)
@@ -106,6 +103,12 @@ struct MANGOS_DLL_DECL boss_ormorokAI : public ScriptedAI
         DoScriptText(SAY_AGGRO, m_creature);
         if(m_pInstance)
             m_pInstance->SetData(TYPE_ORMOROK, IN_PROGRESS);
+    }
+
+    void JustReachedHome()
+    {
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_ORMOROK, FAIL);
     }
 
     void JustDied(Unit* killer)  
