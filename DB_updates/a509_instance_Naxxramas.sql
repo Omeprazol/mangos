@@ -97,27 +97,26 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`
 
 -- Sapphiron - unable to attack/be attacked while spawned (invisible), also immune to taunt
 UPDATE creature_template SET
-unit_flags = unit_flags | 0x00000002 | 0x00000100,
+unit_flags = unit_flags |0x02000000,
 flags_extra = flags_extra | 256
 WHERE entry IN (29991,15989);
 
 -- Sapphiron Birth
 DELETE FROM gameobject WHERE id = 181356;
 INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES
-('507500','181356','533','1','1','3522.39','-5236.78','137.709','4.50295','0','0','0.296306','0.955093','604800','0','1');
+('507500','181356','533','3','1','3522.39','-5236.78','137.709','4.50295','0','0','0.296306','0.955093','604800','0','1');
 UPDATE gameobject_template SET size = 1.5 WHERE entry = 181356;
 
 -- FrostWyrm areatriggers (triggers Intro event reset/start)
-DELETE FROM areatrigger_scripts WHERE entry IN (4167, 4120);
+DELETE FROM areatrigger_scripts WHERE entry IN (4167);
 INSERT INTO areatrigger_scripts VALUES
-(4167, 'at_naxxramas'),
-(4120, 'at_naxxramas');
+(4167, 'at_naxxramas');
 
 -- Wing Buffet - unable to attack/be attacked while spawed (invisible)
 UPDATE creature_template SET 
 faction_A = 21,
 faction_H = 21,
-unit_flags = unit_flags |2|256,
+unit_flags = unit_flags|0x02000000,
 AIName = 'EventAI',
 ScriptName = ''
 WHERE entry IN (17025);
@@ -136,16 +135,17 @@ INSERT INTO spell_script_target VALUES
 UPDATE creature_template SET
 faction_A = 21,
 faction_H = 21,
-unit_flags = unit_flags|2|256,
+unit_flags = unit_flags |0x02000000,
 AIName = '',
-ScriptName = ''
+ScriptName = '',
+flags_extra = flags_extra | 128
 WHERE entry IN (16474,30000);
 
 DELETE FROM creature_ai_scripts WHERE creature_id = 16474;
 
 DELETE FROM creature WHERE id = 16474;
 INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
-('9000020','16474','533','1','1','0','0','3491.37','-5259.26','138.084','5.48815','25','5','0','300','0','0','2');
+('9000020','16474','533','3','1','0','0','3491.37','-5259.26','138.084','5.48815','25','5','0','300','0','0','2');
 
 DELETE FROM creature_movement WHERE id = 9000020;
 INSERT INTO `creature_movement` (`id`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`, `textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `wpguid`, `orientation`, `model1`, `model2`) VALUES
@@ -184,11 +184,10 @@ INSERT INTO `creature_movement` (`id`, `point`, `position_x`, `position_y`, `pos
 ('9000020','33','3485.66','-5249.86','138.024','0','0','0','0','0','0','0','0','0','0','1.90514','0','0'),
 ('9000020','34','3492.75','-5259.76','138.11','0','0','0','0','0','0','0','0','0','0','5.33341','0','0');
 
-/* clean udb 390 spawn
+/* UDB 390 spawn
 DELETE FROM creature WHERE id = 15989;
 INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
-('133932','15989','533','3','1','16033','0','3522.39','-5236.78','137.709','4.50295','604800','0','0','4183500','0','0','0');
-*/
+('133932','15989','533','3','1','16033','0','3522.39','-5236.78','137.709','4.50295','604800','0','0','4183500','0','0','0');*/
 
 ####################   boss_kelthuzad    #########################################################
 

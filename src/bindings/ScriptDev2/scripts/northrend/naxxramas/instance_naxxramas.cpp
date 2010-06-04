@@ -51,7 +51,6 @@ instance_naxxramas::instance_naxxramas(Map* pMap) : ScriptedInstance(pMap),
     m_uiKelthuzadGUID(0),
     m_uiSapphironGUID(0),
     m_uiSapphironBirthGUID(0),
-    m_uiSapphironWingBuffetGUID(0),
 
     m_uiPathExitDoorGUID(0),
     m_uiGlutExitDoorGUID(0),
@@ -116,9 +115,6 @@ void instance_naxxramas::OnCreatureCreate(Creature* pCreature)
             m_uiSapphironGUID = pCreature->GetGUID();
             if (m_auiEncounter[13] == NOT_STARTED)
                 pCreature->SetVisibility(VISIBILITY_OFF);
-            break;
-        case NPC_SAPPHIRONS_WING_BUFFET:
-            m_uiSapphironWingBuffetGUID = pCreature->GetGUID();
             break;
     }
 }
@@ -249,7 +245,7 @@ void instance_naxxramas::OnObjectCreate(GameObject* pGo)
 
         case GO_KELTHUZAD_WATERFALL_DOOR:
             m_uiKelthuzadDoorGUID = pGo->GetGUID();
-            //if (m_auiEncounter[13] == DONE)
+            if (m_auiEncounter[13] == DONE)
                 pGo->SetGoState(GO_STATE_ACTIVE);
             break;
 
@@ -609,8 +605,6 @@ uint64 instance_naxxramas::GetData64(uint32 uiData)
             return m_uiSapphironGUID;
         case GO_SAPPHIRON_BIRTH:
             return m_uiSapphironBirthGUID;
-        case NPC_SAPPHIRONS_WING_BUFFET:
-            return m_uiSapphironWingBuffetGUID;
         case NPC_KELTHUZAD:
             return m_uiKelthuzadGUID;
     }
@@ -708,6 +702,7 @@ bool AreaTrigger_at_naxxramas(Player* pPlayer, AreaTriggerEntry* pAt)
     switch (pAt->id)
     {
         case AREATRIGGER_KELTHUZAD:
+        {
             if (pPlayer->isGameMaster() || pPlayer->isDead())
                 return false;
 
@@ -725,22 +720,15 @@ bool AreaTrigger_at_naxxramas(Player* pPlayer, AreaTriggerEntry* pAt)
                 }
             }
             break;
-
-        case AREATRIGGER_ENTER_FROSTWYRM:
-        {
-            GameObject* pSapphironBirth = pInstance->instance->GetGameObject(pInstance->GetData64(GO_SAPPHIRON_BIRTH));
-            if (pInstance->GetData(TYPE_SAPPHIRON) == NOT_STARTED && pSapphironBirth && !pSapphironBirth->isSpawned())
-                pSapphironBirth->Respawn();
-
-            break;
         }
         case AREATRIGGER_SAPPHIRON_BIRTH:
         {
             GameObject* pSapphironBirth = pInstance->instance->GetGameObject(pInstance->GetData64(GO_SAPPHIRON_BIRTH));
-            if (pInstance->GetData(TYPE_SAPPHIRON) == NOT_STARTED && pSapphironBirth && pSapphironBirth->isSpawned())
+            if (pInstance->GetData(TYPE_SAPPHIRON) == NOT_STARTED)
             {
+                if (pSapphironBirth)
+                    pSapphironBirth->SetRespawnTime(0);
                 pInstance->SetData(TYPE_SAPPHIRON, SPECIAL);
-                pSapphironBirth->SendObjectDeSpawnAnim(pSapphironBirth->GetGUID());
             }
             break;
         }

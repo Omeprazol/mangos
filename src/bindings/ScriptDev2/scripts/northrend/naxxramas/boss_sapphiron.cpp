@@ -34,8 +34,8 @@ enum
 {
     EMOTE_BREATH                = -1533082,
     EMOTE_ENRAGE                = -1533083,
-    EMOTE_FLY                   = -1533160,
-    EMOTE_GROUND                = -1533161,
+    EMOTE_FLY                   = -1999768,
+    EMOTE_GROUND                = -1999767,
 
     SPELL_ICEBOLT               = 28522,
     //SPELL_ICEBOLT             = 28526,    // eff 77 implicit 1/0 but with casttime (not used)
@@ -191,6 +191,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
         if (m_pInstance)
             m_pInstance->SetData(TYPE_SAPPHIRON, FAIL);
 
+        DoCastSpellIfCan(m_creature, SPELL_DEACTIVATE_BLIZZARD, CAST_TRIGGERED);
         if (Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_uiWingBuffetGUID))
             pWingBuffet->ForcedDespawn();
     }
@@ -221,14 +222,20 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
         // if sapphiron assemble is in progres TYPE_SAPPHIRON = SPECIAL
         if (m_pInstance && m_pInstance->GetData(TYPE_SAPPHIRON) == SPECIAL && m_creature->GetVisibility() == VISIBILITY_OFF)
         {
+            GameObject* pSapphironBirth = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(GO_SAPPHIRON_BIRTH));
+            if (pSapphironBirth && pSapphironBirth->GetRespawnTime() == 0)
+            {
+                pSapphironBirth->SetRespawnTime(604800);
+                pSapphironBirth->Delete();
+            }
             if (m_uiRespawnTime < uiDiff)
             {
-                m_creature->RemoveFlag(UNIT_FIELD_FLAGS, (UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_OOC_NOT_ATTACKABLE));
+                m_creature->RemoveFlag(UNIT_FIELD_FLAGS, (UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
                 m_creature->SetVisibility(VISIBILITY_ON);
             }
             else
                 m_uiRespawnTime -= uiDiff;
-        } 
+        }
 
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
@@ -314,7 +321,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                         {
                             DoScriptText(EMOTE_BREATH, m_creature);
                             if (Unit* pWingBuffet = Unit::GetUnit(*m_creature, m_uiWingBuffetGUID))
-                                DoCastSpellIfCan(m_creature, SPELL_FROSTBREATH_VISUAL, CAST_TRIGGERED);
+                                DoCastSpellIfCan(pWingBuffet, SPELL_FROSTBREATH_VISUAL, CAST_TRIGGERED);
                             m_uiPhase = PHASE_LANDING;
                             m_uiLandTimer = 7000;
                         }

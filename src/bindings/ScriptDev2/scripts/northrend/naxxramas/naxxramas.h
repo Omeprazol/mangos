@@ -52,7 +52,6 @@ enum
     NPC_HORSEMEN_TAP_LIST       = 32575,
 
     NPC_SAPPHIRON               = 15989,
-    NPC_SAPPHIRONS_WING_BUFFET  = 17025,
     NPC_KELTHUZAD               = 15990,
 
     // Gothik
@@ -123,8 +122,7 @@ enum
     AREATRIGGER_FROSTWYRM       = 4120,                    //not needed here, but AT to be scripted
     AREATRIGGER_KELTHUZAD       = 4112,
     AREATRIGGER_GOTHIK          = 4116,
-    AREATRIGGER_SAPPHIRON_BIRTH = 4167,
-    AREATRIGGER_ENTER_FROSTWYRM = 4120
+    AREATRIGGER_SAPPHIRON_BIRTH = 4167
 };
 
 enum ChamberArea
@@ -215,7 +213,6 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
         uint64 m_uiKelthuzadGUID;
         uint64 m_uiSapphironGUID;
         uint64 m_uiSapphironBirthGUID;
-        uint64 m_uiSapphironWingBuffetGUID;
 
         uint64 m_uiPathExitDoorGUID;
         uint64 m_uiGlutExitDoorGUID;
