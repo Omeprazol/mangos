@@ -189,6 +189,13 @@ DELETE FROM creature WHERE id = 15989;
 INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
 ('133932','15989','533','3','1','16033','0','3522.39','-5236.78','137.709','4.50295','604800','0','0','4183500','0','0','0');*/
 
+DELETE FROM script_texts WHERE entry IN (-1999768,-1999767,-1533083,-1533082);
+INSERT INTO script_texts (`entry`,`content_default`,`type`,`comment`) VALUES
+(-1999768, '%s lifts off into the air',3,'Sapphiron goes up'),
+(-1999767, '%s resumes to hit attacks',3,'Sapphiron returns to fight'),
+(-1533083, '%s enrages!',3,'sapphiron EMOTE_ENRAGE'),
+(-1533082,'%s takes in a deep breath...',3,'sapphiron EMOTE_BREATH');
+
 ####################   boss_kelthuzad    #########################################################
 
 -- fix mobs' speed (first phase)
