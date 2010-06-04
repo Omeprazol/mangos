@@ -203,6 +203,15 @@ UPDATE `creature_template` SET `speed_run` = 0.25,  `speed_walk` = 0.7 WHERE `en
 UPDATE `creature_template` SET `speed_run` = 0.55,  `speed_walk` = 1.5 WHERE `entry` = 16428;
 UPDATE `creature_template` SET `speed_run` =0.1,  `speed_walk` = 0.2 WHERE `entry` = 16429;
 
+-- Shadow Fissure (16129)
+UPDATE `creature_template` SET `AIName` = "EventAI", `unit_flags` = `unit_flags`|33554434 WHERE `entry` = 16129;
+
+-- after 3sec set Kel'Thuzad's faction (21), cast blast, despawn
+DELETE FROM `creature_ai_scripts` WHERE `creature_id` = 16129;
+INSERT INTO `creature_ai_scripts` VALUES
+(1612901, 16129, 1, 0, 100, 6, 3000, 3000, 0, 0, 2, 21, 0, 0, 11, 27812, 0, 2, 41, 0, 0, 0, "Shadow Fissure - Cast Void Blast and despawn"); 
+
+
 /*
 -- Arachnid Quarter::Worshippers and folowers
 DELETE FROM `creature` WHERE `id` IN (16506);
