@@ -1647,8 +1647,18 @@ void Aura::TriggerSpell()
                         target->CastCustomSpell(target, 29879, &bpDamage, NULL, NULL, true, NULL, this, casterGUID);
                         return;
                     }
-//                    // Detonate Mana
-//                    case 27819: break;
+                    // Detonate Mana
+                    case 27819:
+                    {
+                        if (!target->GetMaxPower(POWER_MANA))
+                            return;
+
+                        uint32 uiBurnMana = urand(1800, 2200);
+                        uint32 uiCurrMana = target->GetPower(POWER_MANA);
+                        target->SetPower(POWER_MANA, uiBurnMana > uiCurrMana ? 0 : uiCurrMana - uiBurnMana);
+                        target->CastSpell(target, 27820, true);
+                        return;
+                    }
 //                    // Controller Timer
 //                    case 28095: break;
 //                    // Stalagg Chain
