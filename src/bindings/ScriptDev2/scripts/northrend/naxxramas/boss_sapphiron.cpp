@@ -165,6 +165,9 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
     //!!! Frost Breath HACK!!!
     void DamageDeal(Unit* pDoneTo, uint32& uiDamage)
     {
+        if (!pDoneTo && !pDoneTo->isAlive())
+            return;
+
         if (IsBehindIceBlock(pDoneTo) && m_bCastingFrostBreath)
             uiDamage = 0;
     }
@@ -175,7 +178,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             m_pInstance->SetData(TYPE_SAPPHIRON, IN_PROGRESS);
 
         m_creature->SetInCombatWithZone();
-        DoCastSpellIfCan(m_creature->getVictim(), m_bIsRegularMode ? SPELL_FROST_AURA : H_SPELL_FROST_AURA);
+        DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_FROST_AURA : H_SPELL_FROST_AURA);
     }
 
     void JustDied(Unit* pKiller)
@@ -192,7 +195,8 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             m_pInstance->SetData(TYPE_SAPPHIRON, FAIL);
 
         DoCastSpellIfCan(m_creature, SPELL_DEACTIVATE_BLIZZARD, CAST_TRIGGERED);
-        if (Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_uiWingBuffetGUID))
+        Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_uiWingBuffetGUID);
+        if (pWingBuffet && pWingBuffet->isAlive())
             pWingBuffet->ForcedDespawn();
     }
 
@@ -203,7 +207,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 
         if (uiPointId == POINT_HOME)
         {
-            m_creature->GetMotionMaster()->Clear(true, true);
+            m_creature->GetMotionMaster()->Clear();
             m_creature->GetMotionMaster()->MoveIdle();
             m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LIFTOFF);
             DoCast(m_creature, SPELL_HOVER, true);
@@ -258,7 +262,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                     if (m_uiFlyTimer < uiDiff)
                     {
                         m_creature->InterruptNonMeleeSpells(false);
-                        m_creature->GetMotionMaster()->Clear(true, true);
+                        m_creature->GetMotionMaster()->Clear();
                         m_creature->GetMotionMaster()->MovePoint(POINT_HOME, fHomeX, fHomeY, fHomeZ);
                         m_uiPhase = PHASE_RETURN_TO_THE_CENTER;
                         return;
@@ -314,13 +318,15 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                 {
                     if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                     {
-                        DoCastSpellIfCan(pTarget, SPELL_ICEBOLT);
+                        if (Player* pPlayer = pTarget->GetCharmerOrOwnerPlayerOrPlayerItself())
+                            DoCastSpellIfCan(pPlayer, SPELL_ICEBOLT);
                         ++m_iIceboltCount;
 
                         if (m_iIceboltCount >= (m_bIsRegularMode ? 2 : 3))
                         {
                             DoScriptText(EMOTE_BREATH, m_creature);
-                            if (Unit* pWingBuffet = Unit::GetUnit(*m_creature, m_uiWingBuffetGUID))
+                            Unit* pWingBuffet = Unit::GetUnit(*m_creature, m_uiWingBuffetGUID);
+                            if (pWingBuffet && pWingBuffet->isAlive())
                                 DoCastSpellIfCan(pWingBuffet, SPELL_FROSTBREATH_VISUAL, CAST_TRIGGERED);
                             m_uiPhase = PHASE_LANDING;
                             m_uiLandTimer = 7000;
@@ -345,16 +351,18 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                     m_bCastingFrostBreath = true;
                     DoCastSpellIfCan(m_creature, SPELL_FROSTBREATH, CAST_TRIGGERED);
                     m_bCastingFrostBreath = false;
-                    if (Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_uiWingBuffetGUID))
+                    Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_uiWingBuffetGUID);
+                    if (pWingBuffet && pWingBuffet->isAlive())
                         pWingBuffet->ForcedDespawn();
 
                     m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LAND);
                     m_creature->RemoveAurasDueToSpell(SPELL_HOVER);
-                    m_creature->GetMotionMaster()->Clear(true, true);
-                    m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
                     m_uiBlizzardTimer = 5000;
                     m_uiFlyTimer = 45000;
                     DoScriptText(EMOTE_GROUND, m_creature);
+                    m_creature->GetMotionMaster()->Clear();
+                    if (m_creature->getVictim() && m_creature->getVictim()->isAlive())
+                        m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
                 }
                 else
                     m_uiLandTimer -= uiDiff;
