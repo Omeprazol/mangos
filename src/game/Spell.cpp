@@ -1132,7 +1132,7 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
         !(m_spellInfo->Attributes & SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY))
     {
         if (realCaster)
-        realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_IMMUNE);
+            realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_IMMUNE);
 
         ResetEffectDamageAndHeal();
         return;
@@ -1145,14 +1145,6 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
             realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_DEFLECT);
 
         ResetEffectDamageAndHeal();
-        return;
-    }
-
-    // Recheck deflection (only for delayed spells)
-    if (m_spellInfo->speed && unit->HasAura(19263))
-    {
-        if (realCaster)
-            realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_DEFLECT);
         return;
     }
 
