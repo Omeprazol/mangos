@@ -248,40 +248,6 @@ bool GossipSelect_mob_captive_mechagnome(Player* pPlayer, Creature* pCreature, u
 }
 
 /*######
-## mob_lightning_forge_credit
-######*/
-enum
-{
-    QUEST_DESTROY_FORGES        = 12988,
-    SPELL_BOULDERCRAGS_BOMB     = 56275,
-    SPELL_EXPLOSION             = 59687
-};
-
-struct MANGOS_DLL_DECL mob_lightning_forge_creditAI : public ScriptedAI
-{
-    mob_lightning_forge_creditAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
-
-    void Reset() {}
-
-    void SpellHit(Unit* pCaster, const SpellEntry* pSpell)
-    {
-        if (!pCaster || !pSpell || pCaster->GetTypeId() != TYPEID_PLAYER || pSpell->Id != SPELL_BOULDERCRAGS_BOMB)
-            return;
-
-        DoCast(m_creature,SPELL_EXPLOSION,true);
-
-        if (((Player*)pCaster)->GetQuestStatus(QUEST_DESTROY_FORGES) == QUEST_STATUS_INCOMPLETE)
-            ((Player*)pCaster)->KilledMonsterCredit(m_creature->GetEntry(),m_creature->GetGUID());
-    }
-
-};
-
-CreatureAI* GetAI_mob_lightning_forge_credit(Creature* pCreature)
-{
-    return new mob_lightning_forge_creditAI(pCreature);
-}
-
-/*######
 ## npc_frostborn_scout
 ######*/
 
@@ -543,11 +509,6 @@ void AddSC_storm_peaks()
     newscript->GetAI = &GetAI_mob_captive_mechagnome;
     newscript->pGossipHello = &GossipHello_mob_captive_mechagnome;
     newscript->pGossipSelect = &GossipSelect_mob_captive_mechagnome;
-    newscript->RegisterSelf();
-
-    newscript = new Script;
-    newscript->Name = "mob_lightning_forge_credit";
-    newscript->GetAI = &GetAI_mob_lightning_forge_credit;
     newscript->RegisterSelf();
 
     newscript = new Script;
