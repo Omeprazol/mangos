@@ -9020,7 +9020,7 @@ bool Aura::IsCritFromAbilityAura(Unit* caster, uint32& damage)
         bCanCrit = true;
     }
 
-    if (bCanCrit && caster->IsSpellCrit(GetTarget(), GetSpellProto(), GetSpellSchoolMask(GetSpellProto()))
+    if (bCanCrit && caster->IsSpellCrit(GetTarget(), GetSpellProto(), GetSpellSchoolMask(GetSpellProto())))
     {
         damage = caster->SpellCriticalDamageBonus(GetSpellProto(), damage, GetTarget());
         return true;
@@ -9057,11 +9057,11 @@ void Aura::HandleAuraModAllCritChance(bool apply, bool Real)
 
 void Aura::HandleAuraInitializeImages(bool Apply, bool Real)
 {
-    if (!Real || !Apply || !target || target->GetTypeId() != TYPEID_UNIT)
+    if (!Real || !Apply || !m_target || m_target->GetTypeId() != TYPEID_UNIT)
         return;
     Unit* caster = GetCaster();
-    Unit* creator = Unit::GetUnit(*target,m_target->GetCreatorGUID());
-    Creature* pImmage = (Creature*)target;
+    Unit* creator = Unit::GetUnit(*m_target,m_target->GetCreatorGUID());
+    Creature* pImmage = (Creature*)m_target;
     if (!creator || !caster || creator != caster || pImmage->isPet())
         return;
 
