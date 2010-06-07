@@ -27,13 +27,9 @@ EndScriptData */
 enum
 {
     FACTION_TITAN_UNFRIENDLY        = 415,
-    MOB_CUSTODIAN                   = 7309,
-    MOB_GUARDIAN                    = 7076,
-    MOB_HALLSHAPER                  = 7077,
-    MOB_VAULT_WARDER                = 10120,
+    FACTION_TITAN_NEUTRAL           = 416,
 
     SPELL_GROUND_TREMMOR            = 6524,
-    SPELL_STONED                    = 10255,
     SPELL_AWAKEN_EARTHEN_GUARDIAN   = 10252,
     SPELL_STONE_DWARF_AWAKEN_VISUAL = 10254,
     SPELL_AWAKEN_VAULT_WARDER       = 10258,
@@ -51,14 +47,13 @@ struct MANGOS_DLL_DECL boss_archaedasAI : public ScriptedAI
 {
     boss_archaedasAI(Creature* pCreature) : ScriptedAI(pCreature) 
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        m_pInstance = (instance_uldaman*)pCreature->GetInstanceData();
         Reset();
     }
 
-    ScriptedInstance* m_pInstance;
+    instance_uldaman* m_pInstance;
 
-    std::list<Creature*> lArchaedasAdds;
-    uint32 m_uiIntroTimer;
+    uint32 m_uiAwakeningTimer;
     uint32 m_uiAwakeDwarfTimer;
     uint8 m_uiSubevent;
     bool bGuardiansAwaken;
@@ -66,73 +61,20 @@ struct MANGOS_DLL_DECL boss_archaedasAI : public ScriptedAI
 
     void Reset()
     {
-        // Fill Archaedas adds list. Maybe they should be deleted from DB and spawned during script execution?
-        if (lArchaedasAdds.empty())
-            AquireAddsList();
-        // Respawn dead adds
-        if (!lArchaedasAdds.empty())
-            for (std::list<Creature*>::iterator itr = lArchaedasAdds.begin(); itr != lArchaedasAdds.end(); ++itr)
-            {
-                if ((*itr) && !(*itr)->isAlive())
-                    (*itr)->Respawn();
-            }
-
-        if (m_pInstance)
-            m_pInstance->SetData(TYPE_ARCHAEDAS_EVENT, NOT_STARTED);
-        // restore orginal DB faction and unitflags at reseting
-        // it should be not selectable, not attackable and not interract in any way with players
-        m_creature->SetFlag(UNIT_FIELD_FLAGS, m_creature->GetCreatureInfo()->unit_flags);
-        m_creature->setFaction(m_creature->GetCreatureInfo()->faction_A);
-
-        m_uiIntroTimer = 1000;
-        m_uiSubevent = 0;
+        m_uiAwakeningTimer  = 1000;
+        m_uiSubevent        = 0;
         m_uiAwakeDwarfTimer = 10000;
-        bGuardiansAwaken = false;
-        bWardersAwaken = false;
-        
-    }
-    void AquireAddsList()
-    {
-        //Aquire Custodians
-        std::list<Creature*> lCreatureList;
-        GetCreatureListWithEntryInGrid(lCreatureList, m_creature, MOB_CUSTODIAN, 100.0f);
-        if (!lCreatureList.empty())
-            for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr)
-            {
-                lArchaedasAdds.push_back((*itr));
-            }
-        lCreatureList.clear();
-        //Aquire Earthen Guardians
-        GetCreatureListWithEntryInGrid(lCreatureList, m_creature, MOB_GUARDIAN, 100.0f);
-        if (!lCreatureList.empty())
-            for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr)
-            {
-                lArchaedasAdds.push_back((*itr));
-            }
-        lCreatureList.clear();
-        //Aquire Hallshapers
-        GetCreatureListWithEntryInGrid(lCreatureList, m_creature, MOB_HALLSHAPER, 100.0f);
-        if (!lCreatureList.empty())
-            for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr)
-            {
-                lArchaedasAdds.push_back((*itr));
-            }
-        lCreatureList.clear();
-        //Aquire Vault Warders
-        GetCreatureListWithEntryInGrid(lCreatureList, m_creature, MOB_VAULT_WARDER, 100.0f);
-        if (!lCreatureList.empty())
-            for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr)
-            {
-                lArchaedasAdds.push_back((*itr));
-            }
-        lCreatureList.clear();
+        bGuardiansAwaken    = false;
+        bWardersAwaken      = false;
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        m_creature->setFaction(FACTION_TITAN_NEUTRAL);
     }
 
     void Aggro(Unit *pWho)
     {
-        if (!pWho || !m_pInstance)
-            return;
-        m_pInstance->SetData(TYPE_ARCHAEDAS_EVENT, IN_PROGRESS);
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_ARCHAEDAS, IN_PROGRESS);
+
         ScriptedAI::Aggro(pWho);
     }
 
@@ -143,116 +85,102 @@ struct MANGOS_DLL_DECL boss_archaedasAI : public ScriptedAI
 
     void JustDied(Unit *pKiller)
     {
-        // Despawn Adds
-        if (!lArchaedasAdds.empty())
-            for (std::list<Creature*>::iterator itr = lArchaedasAdds.begin(); itr != lArchaedasAdds.end(); ++itr)
-            {
-                if ((*itr))
-                    (*itr)->ForcedDespawn();
-            }
-
         if (!m_pInstance)
             return;
 
         // open door to vault (handled by instance script)
-        m_pInstance->SetData(TYPE_ARCHAEDAS_EVENT, DONE);
+        m_pInstance->SetData(TYPE_ARCHAEDAS, DONE);
     }
 
-    void SetTargetableForCast(uint32 entry)
+    void JustReachedHome()
     {
-        // lets make certain creatures vulnarable for spells effect before cast awakening spells with AoE effect
-        for(std::list<Creature*>::iterator itr = lArchaedasAdds.begin(); itr != lArchaedasAdds.end(); ++itr)
-        {
-            if ((*itr) && (*itr)->GetEntry() == entry)
-            {
-                if ((*itr)->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
-                    (*itr)->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                if ((*itr)->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE))
-                    (*itr)->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-            }
-        }
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_ARCHAEDAS, FAIL);
     }
 
     void UpdateAI(const uint32 uiDiff)
     {
+        // so many things are based in this script on instance data
+        // so if we don't have access to it better do nothing
+        if (!m_pInstance)
+            return;
+
         // OOC Intro part triggered by Altar activation
-        if (m_pInstance && m_pInstance->GetData(TYPE_ARCHAEDAS_EVENT) == SPECIAL)
+        if (m_pInstance->GetData(TYPE_ARCHAEDAS) == SPECIAL)
         {
-            if (m_uiIntroTimer <= uiDiff)
+            if (m_uiAwakeningTimer <= uiDiff)
             {
                 switch(m_uiSubevent)
                 {
                     case 0:
                         m_creature->RemoveAurasDueToSpell(SPELL_STONED);
-                        DoCast(m_creature, SPELL_ARCHAEDAS_AWAKEN_VISUAL, false);
+                        DoCastSpellIfCan(m_creature, SPELL_ARCHAEDAS_AWAKEN_VISUAL);
                         break;
                     case 1:
                         DoScriptText(SAY_AGGRO,m_creature,NULL);
                         break;
                     case 2:
                         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                         m_creature->setFaction(FACTION_TITAN_UNFRIENDLY);
                         if (Unit* pUnit = Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_EVENT_STARTER)))
                             AttackStart(pUnit);
-                        else Reset();
+                        else
+                            EnterEvadeMode();
                         break;
                     default: break;
                 }
                 ++m_uiSubevent;
-                m_uiIntroTimer = 5000;
-            }else m_uiIntroTimer -= uiDiff;
+                m_uiAwakeningTimer = 5000;
+            }else m_uiAwakeningTimer -= uiDiff;
         }
 
-        // Temp recurent call of ScriptedAI - without this creature is not evading - dunno why
-        ScriptedAI::UpdateAI(uiDiff);
-
-        if (!m_creature->getVictim() || !m_creature->SelectHostileTarget())
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
         // Awake random Dwarf
-        if (m_creature->GetHealth() * 100 / m_creature->GetMaxHealth() >= 33)
+        if (m_creature->GetHealthPercent() >= 33.0f)
         {
             if (m_uiAwakeDwarfTimer <= uiDiff)
             {
-                DoCast(m_creature, SPELL_AWAKEN_EARTHEN_DWARF, false);
+                if (Creature* pDwarf = m_pInstance->GetDwarf())
+                {
+                    DoCastSpellIfCan(pDwarf, SPELL_AWAKEN_EARTHEN_DWARF, CAST_TRIGGERED);
+                    // hack to remove
+                    pDwarf->AI()->SpellHit(m_creature, GetSpellStore()->LookupEntry(SPELL_AWAKEN_EARTHEN_DWARF));
+                }
                 m_uiAwakeDwarfTimer = urand(9000, 12000);
-            }else m_uiAwakeDwarfTimer -= uiDiff;
+            }
+            else
+                m_uiAwakeDwarfTimer -= uiDiff;
         }
 
         //Awake Earthen Guardians
-        if (!bGuardiansAwaken && m_creature->GetHealthPercent() <= 66)
+        if (!bGuardiansAwaken && m_creature->GetHealthPercent() <= 66.0f)
         {
-            Unit* pUnit = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0);
-            if (!pUnit)
-                pUnit = m_creature->getVictim();
-            if (!pUnit)
-                return;
-            m_pInstance->SetData64(DATA_EVENT_STARTER, pUnit->GetGUID());
+            if (Unit* pUnit = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                m_pInstance->SetData64(DATA_EVENT_STARTER, pUnit->GetGUID());
 
-            DoScriptText(SAY_AWAKE_GUARDIANS, m_creature, NULL);
-            SetTargetableForCast(MOB_GUARDIAN);
-            m_creature->InterruptNonMeleeSpells(false);
-            DoCast(m_creature, SPELL_AWAKEN_EARTHEN_GUARDIAN, true);
+            DoScriptText(SAY_AWAKE_GUARDIANS, m_creature);
+            DoCastSpellIfCan(m_creature, SPELL_AWAKEN_EARTHEN_GUARDIAN, (CAST_TRIGGERED | CAST_INTERRUPT_PREVIOUS));
+            // hack to remove
+            m_pInstance->SimulateSpellHit(MOB_GUARDIAN, SPELL_AWAKEN_EARTHEN_GUARDIAN, m_creature);
             bGuardiansAwaken = true;
         }
 
         // Awake Warders
-        if (!bWardersAwaken && m_creature->GetHealthPercent() <= 33)
+        if (!bWardersAwaken && m_creature->GetHealthPercent() <= 33.0f)
         {
-            Unit* pUnit = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0);
-            if (!pUnit)
-                pUnit = m_creature->getVictim();
-            if (!pUnit)
-                return;
-            m_pInstance->SetData64(DATA_EVENT_STARTER, pUnit->GetGUID());
+            if (Unit* pUnit = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                m_pInstance->SetData64(DATA_EVENT_STARTER, pUnit->GetGUID());
 
             DoScriptText(SAY_AWAKE_WARDERS, m_creature, NULL);
-            SetTargetableForCast(MOB_VAULT_WARDER);
-            m_creature->InterruptNonMeleeSpells(false);
-            DoCast(m_creature, SPELL_AWAKEN_VAULT_WARDER, true);
+            DoCastSpellIfCan(m_creature, SPELL_AWAKEN_VAULT_WARDER, (CAST_TRIGGERED | CAST_INTERRUPT_PREVIOUS));
+            // hack to remove
+            m_pInstance->SimulateSpellHit(MOB_VAULT_WARDER, SPELL_AWAKEN_VAULT_WARDER, m_creature);
             bWardersAwaken = true;
         }
+
+        DoMeleeAttackIfReady();
 
     }     
 };
@@ -261,22 +189,22 @@ struct MANGOS_DLL_DECL mob_archaeras_addAI : public ScriptedAI
 {
     mob_archaeras_addAI(Creature* pCreature) : ScriptedAI(pCreature)
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        m_pInstance = (instance_uldaman*)pCreature->GetInstanceData();
         Reset();
     }
 
-    ScriptedInstance* m_pInstance;
-    uint32 m_uiIntroTimer;
+    instance_uldaman* m_pInstance;
+    uint32 m_uiAwakeningTimer;
     uint8 m_uiSubevent;
     bool bAwakening;
 
     void Reset()
     {
-        m_creature->SetFlag(UNIT_FIELD_FLAGS, m_creature->GetCreatureInfo()->unit_flags);
-        m_creature->setFaction(m_creature->GetCreatureInfo()->faction_A);
-        m_uiIntroTimer = 0;
+        m_uiAwakeningTimer = 0;
         m_uiSubevent = 0;
         bAwakening = false;
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        m_creature->setFaction(FACTION_TITAN_NEUTRAL);
     }
 
     void SpellHit(Unit *pCaster, const SpellEntry *pSpell)
@@ -308,36 +236,33 @@ struct MANGOS_DLL_DECL mob_archaeras_addAI : public ScriptedAI
         // OOC part triggered by awakening spell hit
         if (bAwakening)
         {
-            if (m_uiIntroTimer <= uiDiff)
+            if (m_uiAwakeningTimer <= uiDiff)
             {
                 switch(m_uiSubevent)
                 {
                 case 0:
                     m_creature->RemoveAurasDueToSpell(SPELL_STONED);
-                    DoCast(m_creature, SPELL_STONE_DWARF_AWAKEN_VISUAL, false);
+                    DoCastSpellIfCan(m_creature, SPELL_STONE_DWARF_AWAKEN_VISUAL);
                     break;
                 case 1:
                     m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                    m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                     m_creature->setFaction(FACTION_TITAN_UNFRIENDLY);
                     if (Unit* pUnit = Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_EVENT_STARTER)))
                     {
                         bAwakening = false;
                         AttackStart(pUnit);
                     }
-                    else Reset();
+                    else 
+                        EnterEvadeMode();
                     break;
                 default: break;
                 }
                 ++m_uiSubevent;
-                m_uiIntroTimer = 2000;
-            }else m_uiIntroTimer -= uiDiff;
+                m_uiAwakeningTimer = 2000;
+            }else m_uiAwakeningTimer -= uiDiff;
         }
 
-        // Temp recurent call of ScriptedAI - without this creature is not evading - dunno why
-        ScriptedAI::UpdateAI(uiDiff);
-
-        if (!m_creature->getVictim() || !m_creature->SelectHostileTarget())
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
         DoMeleeAttackIfReady();
@@ -354,7 +279,7 @@ bool GOHello_go_altar_of_archaedas(Player* pPlayer, GameObject* pGo)
     pPlayer->CastSpell(pPlayer, SPELL_USE_ALTAR_VISUAL,true);
 
     // begin OOC "intro" and store target for Archaedas to attack
-    m_pInstance->SetData(TYPE_ARCHAEDAS_EVENT, SPECIAL);
+    m_pInstance->SetData(TYPE_ARCHAEDAS, SPECIAL);
     m_pInstance->SetData64(DATA_EVENT_STARTER, pPlayer->GetGUID());
     return true;
 }

@@ -194,11 +194,9 @@ bool GOHello_go_altar_of_keepers(Player* pPlayer, GameObject* pGo)
                 (*itr)->setFaction(FACTION_TITAN_UNFRIENDLY);
                 (*itr)->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 (*itr)->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                (*itr)->RemoveAurasDueToSpell(SPELL_STONED);
                 if ((*itr)->AI())
-                {
-                    (*itr)->RemoveAurasDueToSpell(SPELL_STONED);
                     (*itr)->AI()->AttackStart(pPlayer);
-                }
             }
         }
     }
