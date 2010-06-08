@@ -103,6 +103,7 @@ struct MANGOS_DLL_DECL boss_novosAI : public ScriptedAI
 
         m_pInstance->SetData(TYPE_NOVOS, NOT_STARTED);
         m_pInstance->SetData(TYPE_CRYSTAL_EVENT, NOT_STARTED);
+        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
     }
 
     void Aggro(Unit* pWho)
