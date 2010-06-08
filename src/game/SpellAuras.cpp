@@ -3084,6 +3084,10 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     if (!(GetAuraDuration() <= 0 || m_removeMode == AURA_REMOVE_BY_DISPEL))
                         return;
 
+                    Unit* caster = GetCaster();
+                    if (!caster)
+                        return;
+
                     // have a look if there is still some other Lifebloom dummy aura
                     Unit::AuraList const& auras = target->GetAurasByType(SPELL_AURA_DUMMY);
                     for(Unit::AuraList::const_iterator itr = auras.begin(); itr!=auras.end(); ++itr)
@@ -3095,13 +3099,13 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     if (target->IsInWorld() && GetStackAmount() > 0)
                     {
                         int32 amount = m_modifier.m_amount / GetStackAmount();
+                        amount = m_target->SpellHealingBonusTaken(caster, GetSpellProto(), amount, SPELL_DIRECT_DAMAGE);
+                        amount *= GetStackAmount();
+
                         target->CastCustomSpell(target, 33778, &amount, NULL, NULL, true, NULL, this, GetCasterGUID());
 
-                        if (Unit* caster = GetCaster())
-                        {
-                            int32 returnmana = (GetSpellProto()->ManaCostPercentage * caster->GetCreateMana() / 100) * GetStackAmount() / 2;
-                            caster->CastCustomSpell(caster, 64372, &returnmana, NULL, NULL, true, NULL, this, GetCasterGUID());
-                        }
+                        int32 returnmana = (GetSpellProto()->ManaCostPercentage * caster->GetCreateMana() / 100) * m_stackAmount / 2;
+                        caster->CastCustomSpell(caster, 64372, &returnmana, NULL, NULL, true, NULL, this, GetCasterGUID());
                     }
                 }
                 return;
