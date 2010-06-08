@@ -43,7 +43,7 @@ class MANGOS_DLL_DECL instance_uldaman : public ScriptedInstance
 
         Creature* GetDwarf();
         // hack to remove
-        void instance_uldaman::SimulateSpellHit(uint32 uiCreatureEntry, uint32 uiSpellEntry, Unit* pCaster);
+        void SimulateSpellHit(uint32 uiCreatureEntry, uint32 uiSpellEntry, Unit* pCaster);
 
         const char* Save() { return strInstData.c_str(); }
         void Load(const char* chrIn);
