@@ -207,8 +207,6 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 
         if (uiPointId == POINT_HOME)
         {
-            m_creature->GetMotionMaster()->Clear();
-            m_creature->GetMotionMaster()->MoveIdle();
             m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LIFTOFF);
             DoCast(m_creature, SPELL_HOVER, true);
             m_uiIceboltTimer = 4000;
@@ -262,7 +260,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                     if (m_uiFlyTimer < uiDiff)
                     {
                         m_creature->InterruptNonMeleeSpells(false);
-                        m_creature->GetMotionMaster()->Clear();
+                        SetCombatMovement(false);
                         m_creature->GetMotionMaster()->MovePoint(POINT_HOME, fHomeX, fHomeY, fHomeZ);
                         m_uiPhase = PHASE_RETURN_TO_THE_CENTER;
                         return;
@@ -350,7 +348,6 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                     // dmg form FrostBreath :/
                     m_bCastingFrostBreath = true;
                     DoCastSpellIfCan(m_creature, SPELL_FROSTBREATH, CAST_TRIGGERED);
-                    m_bCastingFrostBreath = false;
                     Creature* pWingBuffet = (Creature*)Unit::GetUnit(*m_creature, m_uiWingBuffetGUID);
                     if (pWingBuffet && pWingBuffet->isAlive())
                         pWingBuffet->ForcedDespawn();
@@ -360,9 +357,11 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                     m_uiBlizzardTimer = 5000;
                     m_uiFlyTimer = 45000;
                     DoScriptText(EMOTE_GROUND, m_creature);
-                    m_creature->GetMotionMaster()->Clear();
-                    if (m_creature->getVictim() && m_creature->getVictim()->isAlive())
+                    SetCombatMovement(true);
+                    m_creature->GetMotionMaster()->MovementExpired(true);
+                    if (m_creature->getVictim())
                         m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+                    m_bCastingFrostBreath = false;
                 }
                 else
                     m_uiLandTimer -= uiDiff;
