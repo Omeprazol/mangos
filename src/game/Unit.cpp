@@ -8072,6 +8072,12 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                 trigger_spell_id = 54843;
                 target = pVictim;
             }
+            // Glyph of Seal of Command - lookup for Seal of Command
+            else if (auraSpellInfo->Id == 54925)
+            {
+                if (!HasAura(20375))
+                    return false;
+            }
             break;
         }
         case SPELLFAMILY_SHAMAN:
@@ -8364,12 +8370,6 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
         {
             basepoints[0] = int32(GetTotalAttackPowerValue(BASE_ATTACK) * triggerAmount / 100);
             break;
-        }
-        // Glyph of Seal of Command - lookup for Seal of Command
-        case 68082:
-        {
-            if (!HasAura(20375))
-                return false;
         }
     }
 
