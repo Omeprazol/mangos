@@ -26,8 +26,8 @@ EndScriptData
 #include "uldaman.h"
 
 instance_uldaman::instance_uldaman(Map* pMap) : ScriptedInstance(pMap),
-    m_uiTempleDoor1GUID(0),
-    m_uiTempleDoor2GUID(0),
+    m_uiTempleDoorUpperGUID(0),
+    m_uiTempleDoorLowerGUID(0),
     m_uiAncientVaultGUID(0),
     m_uiPlayerGUID(0),
     m_uiStoneKeepersFallen(0)
@@ -45,12 +45,18 @@ void instance_uldaman::OnObjectCreate(GameObject* pGo)
     switch(pGo->GetEntry())
     {
         case GO_TEMPLE_DOOR_UPPER:
-            m_uiTempleDoor1GUID = pGo->GetGUID();
+            if (m_auiEncounter[0] == DONE)
+                pGo->SetGoState(GO_STATE_ACTIVE);
+            m_uiTempleDoorUpperGUID = pGo->GetGUID();
             break;
         case GO_TEMPLE_DOOR_LOWER:
-            m_uiTempleDoor2GUID = pGo->GetGUID();
+            if (m_auiEncounter[0] == DONE)
+                pGo->SetGoState(GO_STATE_ACTIVE);
+            m_uiTempleDoorLowerGUID = pGo->GetGUID();
             break;
         case GO_ANCIENT_VAULT:
+            if (m_auiEncounter[1] == DONE)
+                pGo->SetGoState(GO_STATE_ACTIVE);
             m_uiAncientVaultGUID = pGo->GetGUID();
             break;
         default: break;
@@ -82,8 +88,8 @@ void instance_uldaman::SetData(uint32 uiType, uint32 uiData)
             if (m_uiStoneKeepersFallen > 3)
             {
                 uiData = DONE;
-                DoUseDoorOrButton(m_uiTempleDoor1GUID);
-                DoUseDoorOrButton(m_uiTempleDoor2GUID);
+                DoUseDoorOrButton(m_uiTempleDoorUpperGUID);
+                DoUseDoorOrButton(m_uiTempleDoorLowerGUID);
             }
             m_auiEncounter[0] = uiData;
             break;

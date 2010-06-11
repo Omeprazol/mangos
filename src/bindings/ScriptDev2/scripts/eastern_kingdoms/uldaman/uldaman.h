@@ -52,8 +52,8 @@ class MANGOS_DLL_DECL instance_uldaman : public ScriptedInstance
         uint32 m_auiEncounter[MAX_ENCOUNTER];
         std::string strInstData;
 
-        uint64 m_uiTempleDoor1GUID;
-        uint64 m_uiTempleDoor2GUID;
+        uint64 m_uiTempleDoorUpperGUID;
+        uint64 m_uiTempleDoorLowerGUID;
         uint64 m_uiAncientVaultGUID;
         uint64 m_uiPlayerGUID;
         uint8 m_uiStoneKeepersFallen;
