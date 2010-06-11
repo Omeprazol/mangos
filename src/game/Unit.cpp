@@ -4228,7 +4228,7 @@ bool Unit::RemoveNoStackAurasDueToAura(Aura *Aur)
                     continue;
 
             // cannot remove higher rank
-            if (sSpellMgr.IsRankSpellDueToSpell(spellProto, i_spellId))
+            if (sSpellMgr.IsRankSpellDueToSpell(spellProto, i_spellId) || i_spellId_spec == SPELL_MAGE_INTELLECT)
                 if(CompareAuraRanks(spellId, effIndex, i_spellId, i_effIndex) < 0)
                     return false;
 
