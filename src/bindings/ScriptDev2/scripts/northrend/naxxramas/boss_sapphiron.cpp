@@ -117,6 +117,27 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
         m_creature->GetRespawnCoord(fHomeX, fHomeY, fHomeZ);
     }
 
+    Unit* SelectTargetForIcebolt()
+    {
+         // get `iceblockers`
+         std::list<Unit*> lPotentialTargets;
+         ThreatList const& tList = m_creature->getThreatManager().getThreatList();
+         for (ThreatList::const_iterator i = tList.begin();i != tList.end(); ++i)
+         {
+             Unit* pUnit = Unit::GetUnit(*m_creature, (*i)->getUnitGuid());
+             if (pUnit && pUnit->GetTypeId() == TYPEID_PLAYER &&
+                 pUnit->isAlive() && !pUnit->HasAura(SPELL_ICEBOLT))
+                 lPotentialTargets.push_back(pUnit);
+         }
+
+         if (lPotentialTargets.empty())
+             return NULL;
+
+         std::list<Unit*>::iterator i = lPotentialTargets.begin();
+         advance(i, (rand()%lPotentialTargets.size()));
+         return (*i);
+    }     
+
     //!!! Frost Breath HACK!!!
     // Since GOs are not valid obstacle for LoS we need this
     bool IsBehindIceBlock(Unit* pVictim)
@@ -314,21 +335,19 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             case PHASE_ICEBOLTS:
                 if (m_uiIceboltTimer < uiDiff)
                 {
-                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                    {
-                        if (Player* pPlayer = pTarget->GetCharmerOrOwnerPlayerOrPlayerItself())
-                            DoCastSpellIfCan(pPlayer, SPELL_ICEBOLT);
-                        ++m_iIceboltCount;
+                    if (Unit* pTarget = SelectTargetForIcebolt())
+                        DoCastSpellIfCan(pTarget, SPELL_ICEBOLT);
 
-                        if (m_iIceboltCount >= (m_bIsRegularMode ? 2 : 3))
-                        {
-                            DoScriptText(EMOTE_BREATH, m_creature);
-                            Unit* pWingBuffet = Unit::GetUnit(*m_creature, m_uiWingBuffetGUID);
-                            if (pWingBuffet && pWingBuffet->isAlive())
-                                DoCastSpellIfCan(pWingBuffet, SPELL_FROSTBREATH_VISUAL, CAST_TRIGGERED);
-                            m_uiPhase = PHASE_LANDING;
-                            m_uiLandTimer = 7000;
-                        }
+                    ++m_iIceboltCount;
+
+                    if (m_iIceboltCount >= (m_bIsRegularMode ? 2 : 3))
+                    {
+                        DoScriptText(EMOTE_BREATH, m_creature);
+                        Unit* pWingBuffet = Unit::GetUnit(*m_creature, m_uiWingBuffetGUID);
+                        if (pWingBuffet && pWingBuffet->isAlive())
+                            DoCastSpellIfCan(pWingBuffet, SPELL_FROSTBREATH_VISUAL, CAST_TRIGGERED);
+                        m_uiPhase = PHASE_LANDING;
+                        m_uiLandTimer = 7000;
                     }
                     m_uiIceboltTimer = 4000;
                 }
