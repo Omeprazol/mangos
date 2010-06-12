@@ -477,6 +477,7 @@ bool IsSingleFromSpellSpecificPerTargetPerCaster(SpellSpecific spellSpec1,SpellS
         case SPELL_STING:
         case SPELL_CURSE:
         case SPELL_ASPECT:
+        case SPELL_POSITIVE_SHOUT:
         case SPELL_JUDGEMENT:
         case SPELL_HAND:
         case SPELL_UA_IMMOLATE:
@@ -516,7 +517,6 @@ bool IsSingleFromSpellSpecificPerTarget(SpellSpecific spellSpec1,SpellSpecific s
         case SPELL_PRESENCE:
         case SPELL_WELL_FED:
         case SPELL_MAGE_INTELLECT:
-        case SPELL_POSITIVE_SHOUT:
             return spellSpec1==spellSpec2;
         case SPELL_BATTLE_ELIXIR:
             return spellSpec2==SPELL_BATTLE_ELIXIR
