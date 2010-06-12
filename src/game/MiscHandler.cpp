@@ -912,12 +912,7 @@ void WorldSession::HandleSetActionButtonOpcode(WorldPacket& recv_data)
     uint8  type   = ACTION_BUTTON_TYPE(packetData);
 
     DETAIL_LOG( "BUTTON: %u ACTION: %u TYPE: %u", button, action, type );
-    if (!packetData)
-    {
-        DETAIL_LOG( "MISC: Remove action from button %u", button );
-        GetPlayer()->removeActionButton(GetPlayer()->GetActiveSpec(),button);
-    }
-    else
+    if (packetData)
     {
         switch(type)
         {
