@@ -3,7 +3,8 @@
 -- Zmiana flagi na 128 (vendor)
 -- Civilian
 UPDATE `creature_template` SET
-npcflag = npcflag |4225,
+npcflag = npcflag | 4225,
+unit_flags = unit_flags | 4,
 flags_extra = flags_extra | 2
 WHERE `entry` = 29561;
 
