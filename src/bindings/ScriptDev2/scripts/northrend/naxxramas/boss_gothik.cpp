@@ -190,12 +190,14 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
             if (uiCount == 0)
                 break;
 
-			if(Creature* pAdds = m_creature->SummonCreature(uiSummonEntry, (*itr)->GetPositionX(), (*itr)->GetPositionY(), (*itr)->GetPositionZ(), (*itr)->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000);
-			{
-				if(Unit* pPlayer = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
+            if(Creature* pAdds = m_creature->SummonCreature(uiSummonEntry, (*itr)->GetPositionX(), (*itr)->GetPositionY(), (*itr)->GetPositionZ(), (*itr)->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+            {
+                if(Unit* pPlayer = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
+                {
 					pAdds->AI()->AttackStart(pPlayer);
-			}
+                }
             --uiCount;
+            }
         }
     }
 
