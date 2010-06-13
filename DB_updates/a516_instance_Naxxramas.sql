@@ -43,9 +43,7 @@ DELETE FROM creature_ai_scripts WHERE id IN (1650503,1650513,1650612);
 INSERT INTO `creature_ai_scripts` VALUES
 (1650503,16505,0,0,100,7,0,0,30000,30000,39,20,0,0,0,0,0,0,0,0,0,0,'Naxxramas Follower - call nearby creatures'),
 (1650513,16505,0,0,100,7,0,0,30000,30000,39,20,0,0,0,0,0,0,0,0,0,0,'Naxxramas Worshipper - call nearby creatures'),
-(1650612,16506,6,0,100,2,0,0,0,0,11,28732,6,17,0,0,0,0,0,0,0,0,'Naxxramas Worshipper - Cast Widow\'s Embrace on Death (normal)'),
-(1650613,16506,6,0,100,2,0,0,0,0,11,54097,6,17,0,0,0,0,0,0,0,0,'Naxxramas Worshipper (heroic) - Cast Widow''s Embrace on Death (heroic)');
-
+(1650612,16506,6,0,100,2,0,0,0,0,11,28732,6,17,0,0,0,0,0,0,0,0,'Naxxramas Worshipper - Cast Widow\'s Embrace on Death (normal)');
 
 -- immunities quoted by wowwiki
 -- Naxxramas Worshipper (normal) (charm)

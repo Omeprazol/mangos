@@ -104,6 +104,8 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
 
         m_uiTeleportTimer = 15000;
         m_uiShadowboltTimer = 2500;
+		
+		m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
     }
 
     void Aggro(Unit* pWho)
@@ -188,10 +190,10 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
             if (uiCount == 0)
                 break;
 
-            Creature* pAdds = m_creature->SummonCreature(uiSummonEntry, (*itr)->GetPositionX(), (*itr)->GetPositionY(), (*itr)->GetPositionZ(), (*itr)->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000);
-			if(pAdds && pAdds->AI()) {
+			if(Creature* pAdds = m_creature->SummonCreature(uiSummonEntry, (*itr)->GetPositionX(), (*itr)->GetPositionY(), (*itr)->GetPositionZ(), (*itr)->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000);
+			{
 				if(Unit* pPlayer = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
-				pAdds->AI()->AttackStart(pPlayer);
+					pAdds->AI()->AttackStart(pPlayer);
 			}
             --uiCount;
         }
