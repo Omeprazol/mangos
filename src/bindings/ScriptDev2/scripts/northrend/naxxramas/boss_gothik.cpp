@@ -91,6 +91,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
 
     uint32 m_uiTeleportTimer;
     uint32 m_uiShadowboltTimer;
+	uint32 m_uiHarvestsoulTimer;
 
     void Reset()
     {
@@ -104,6 +105,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
 
         m_uiTeleportTimer = 15000;
         m_uiShadowboltTimer = 2500;
+		m_uiHarvestsoulTimer = 15000;
 		
 		m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
     }
@@ -343,7 +345,15 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
                 }
                 else
                     m_uiShadowboltTimer -= uiDiff;
-
+					
+                if (m_uiHarvestsoulTimer < uiDiff)
+                {
+                    DoCastSpellIfCan(m_creature, SPELL_HARVESTSOUL);
+                    m_uiHarvestsoulTimer = 15000;
+                }
+                else
+                    m_uiHarvestsoulTimer -= uiDiff;
+					
                 DoMeleeAttackIfReady();                     // possibly no melee at all
                 break;
             }
@@ -426,10 +436,24 @@ bool EffectDummyCreature_spell_anchor(Unit* pCaster, uint32 uiSpellId, SpellEffe
                 else if (uiSpellId == SPELL_C_TO_SKULL)
                     uiNpcEntry = NPC_SPECT_RIDER;
 
-                pGoth->SummonCreature(uiNpcEntry, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 20000);
+                if(Creature* pDeathAdds = pGoth->SummonCreature(uiNpcEntry, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 20000))
+				{
+					if(Unit* pPlayer = pGoth->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
+					{
+						pDeathAdds->AI()->AttackStart(pPlayer);
+					}
+				}
 
                 if (uiNpcEntry == NPC_SPECT_RIDER)
-                    pGoth->SummonCreature(NPC_SPECT_HORSE, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 20000);
+				{
+                    if(Creature* pDeathSpecial = pGoth->SummonCreature(NPC_SPECT_HORSE, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 20000))
+					{
+					    if(Unit* pPlayer = pGoth->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
+					        {
+						        pDeathSpecial->AI()->AttackStart(pPlayer);
+					        }
+					}
+				}				
             }
             return true;
         }
