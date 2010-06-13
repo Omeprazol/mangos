@@ -16,8 +16,8 @@
 
 /* ScriptData
 SDName: Boss_Gothik
-SD%Complete: 60
-SDComment: Only base implemented. Todo: control adds at summon. Handle case of raid not splitted in two sides
+SD%Complete: 70
+SDComment: Handle case of raid not splitted in two sides. What should it do if whole raid is at one side??
 SDCategory: Naxxramas
 EndScriptData */
 
@@ -104,6 +104,8 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
 
         m_uiTeleportTimer = 15000;
         m_uiShadowboltTimer = 2500;
+		
+		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
     }
 
     void Aggro(Unit* pWho)
@@ -186,7 +188,11 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
             if (uiCount == 0)
                 break;
 
-            m_creature->SummonCreature(uiSummonEntry, (*itr)->GetPositionX(), (*itr)->GetPositionY(), (*itr)->GetPositionZ(), (*itr)->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000);
+            Creature* pAdds = m_creature->SummonCreature(uiSummonEntry, (*itr)->GetPositionX(), (*itr)->GetPositionY(), (*itr)->GetPositionZ(), (*itr)->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000);
+			if(pAdds && pAdds->AI()) {
+				if(Unit* pPlayer = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
+				pAdds->AI()->AttackStart(pPlayer);
+			}
             --uiCount;
         }
     }
@@ -294,6 +300,8 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
             case PHASE_GROUND:
             case PHASE_END:
             {
+				m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+				
                 if (m_uiPhase == PHASE_GROUND)
                 {
                     if (m_creature->GetHealthPercent() < 30.0f)
