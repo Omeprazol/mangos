@@ -4644,9 +4644,13 @@ void Spell::DoSummonGuardian(SpellEffectIndex eff_idx, uint32 forceFaction)
 
     int32 amount = damage > 0 ? damage : 1;
     
-    // engineering dragonlings
-    if (m_spellInfo->EffectMiscValueB[0] == 2081)
-        amount = 1;
+    switch(m_spellInfo->EffectMiscValueB[eff_idx])
+    {
+        case 2081: // engeneering dragonlings
+        case 2141: // Winterfin First Responder
+            amount = 1;
+            break;
+    }
 
     for(int32 count = 0; count < amount; ++count)
     {
