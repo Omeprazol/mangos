@@ -104,8 +104,6 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
 
         m_uiTeleportTimer = 15000;
         m_uiShadowboltTimer = 2500;
-		
-		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
     }
 
     void Aggro(Unit* pWho)
@@ -120,6 +118,8 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
         m_pInstance->SetData(TYPE_GOTHIK, IN_PROGRESS);
 
         m_pInstance->SetGothTriggers();
+		
+		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
     }
 
     bool HasPlayersInLeftSide()
