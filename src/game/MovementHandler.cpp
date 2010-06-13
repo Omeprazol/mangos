@@ -644,9 +644,14 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     movementInfo.UpdateTime(getMSTime());
 
     WorldPacket data(opcode, recv_data.size());
-    data.appendPackGUID(mover->GetGUID());                  // write guid
-    movementInfo.Write(data);                               // write data
-    mover->SendMessageToSetExcept(&data, _player);
+    if(mover->IsInWorld())
+    {
+        data.appendPackGUID(mover->GetGUID());                  // write guid
+        movementInfo.Write(data);                               // write data
+        mover->SendMessageToSetExcept(&data, _player);
+    }
+    else
+        error_log("mover not in world");
 
     if(plMover)                                             // nothing is charmed, or player charmed
     {
