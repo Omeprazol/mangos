@@ -39,6 +39,7 @@
 
 #define DEFAULT_WORLD_OBJECT_SIZE   0.388999998569489f      // player size, also currently used (correctly?) for any non Unit world objects
 #define MAX_STEALTH_DETECT_RANGE    45.0f
+#define TERRAIN_LOS_STEP_DISTANCE   3.0f
 
 uint32 GuidHigh2TypeId(uint32 guid_hi);
 
@@ -64,6 +65,7 @@ class WorldPacket;
 class UpdateData;
 class WorldSession;
 class Creature;
+class GameObject;
 class Player;
 class Unit;
 class Map;
@@ -364,7 +366,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
             return ( m_valuesCount > UNIT_FIELD_BOUNDINGRADIUS ) ? m_floatValues[UNIT_FIELD_BOUNDINGRADIUS] : DEFAULT_WORLD_OBJECT_SIZE;
         }
         bool IsPositionValid() const;
-        void UpdateGroundPositionZ(float x, float y, float &z) const;
+        void UpdateGroundPositionZ(float x, float y, float &z, float maxDiff = 30.0f) const;
 
         void GetRandomPoint( float x, float y, float z, float distance, float &rand_x, float &rand_y, float &rand_z ) const;
 
@@ -476,6 +478,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         void BuildUpdateData(UpdateDataMapType &);
 
         Creature* SummonCreature(uint32 id, float x, float y, float z, float ang,TempSummonType spwtype,uint32 despwtime);
+        GameObject* SummonGameobject(uint32 id, float x, float y, float z, float angle, uint32 despwtime);
     protected:
         explicit WorldObject();
 

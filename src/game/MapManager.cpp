@@ -28,6 +28,7 @@
 #include "World.h"
 #include "CellImpl.h"
 #include "Corpse.h"
+#include "Config/ConfigEnv.h"
 #include "ObjectMgr.h"
 
 #define CLASS_LOCK MaNGOS::ClassLevelLockable<MapManager, ACE_Thread_Mutex>
@@ -54,12 +55,17 @@ MapManager::~MapManager()
 void
 MapManager::Initialize()
 {
+    int num_threads(sWorld.getConfig(CONFIG_UINT32_NUMTHREADS));
+    // Start mtmaps if needed.
+    if(num_threads > 0 && m_updater.activate(num_threads) == -1)
+        abort();
+
     InitStateMachine();
     InitMaxInstanceId();
 }
 
 void MapManager::InitStateMachine()
-{
+    {
     si_GridStates[GRID_STATE_INVALID] = new InvalidState;
     si_GridStates[GRID_STATE_ACTIVE] = new ActiveState;
     si_GridStates[GRID_STATE_IDLE] = new IdleState;
@@ -73,6 +79,7 @@ void MapManager::DeleteStateMachine()
     delete si_GridStates[GRID_STATE_IDLE];
     delete si_GridStates[GRID_STATE_REMOVAL];
 }
+
 
 void MapManager::UpdateGridState(grid_state_t state, Map& map, NGridType& ngrid, GridInfo& ginfo, const uint32 &x, const uint32 &y, const uint32 &t_diff)
 {
@@ -233,20 +240,29 @@ bool MapManager::CanPlayerEnter(uint32 mapid, Player* player)
 
 void MapManager::DeleteInstance(uint32 mapid, uint32 instanceId)
 {
+    Guard guard(*this);
+
     Map *m = _createBaseMap(mapid);
     if (m && m->Instanceable())
         ((MapInstanced*)m)->DestroyInstance(instanceId);
 }
 
-void
-MapManager::Update(uint32 diff)
+void MapManager::Update(uint32 diff)
 {
     i_timer.Update(diff);
     if( !i_timer.Passed() )
         return;
 
     for(MapMapType::iterator iter=i_maps.begin(); iter != i_maps.end(); ++iter)
-        iter->second->Update((uint32)i_timer.GetCurrent());
+    {
+        if (m_updater.activated())
+            m_updater.schedule_update(*iter->second, i_timer.GetCurrent());
+        else
+            iter->second->Update(i_timer.GetCurrent());
+    }
+
+    if (m_updater.activated())
+        m_updater.wait();
 
     for (TransportSet::iterator iter = m_Transports.begin(); iter != m_Transports.end(); ++iter)
         (*iter)->Update(i_timer.GetCurrent());
@@ -287,6 +303,9 @@ void MapManager::UnloadAll()
         delete i_maps.begin()->second;
         i_maps.erase(i_maps.begin());
     }
+
+    if (m_updater.activated())
+        m_updater.deactivate();
 }
 
 void MapManager::InitMaxInstanceId()
@@ -303,6 +322,8 @@ void MapManager::InitMaxInstanceId()
 
 uint32 MapManager::GetNumInstances()
 {
+    Guard guard(*this);
+
     uint32 ret = 0;
     for(MapMapType::iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
     {
@@ -317,6 +338,8 @@ uint32 MapManager::GetNumInstances()
 
 uint32 MapManager::GetNumPlayersInInstances()
 {
+    Guard guard(*this);
+
     uint32 ret = 0;
     for(MapMapType::iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
     {

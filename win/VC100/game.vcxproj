@@ -377,6 +377,8 @@
     <ClCompile Include="..\..\src\game\CharacterHandler.cpp" />
     <ClCompile Include="..\..\src\game\Chat.cpp" />
     <ClCompile Include="..\..\src\game\ChatHandler.cpp" />
+    <ClCompile Include="..\..\src\game\ChatLexicsCutter.cpp" />
+    <ClCompile Include="..\..\src\game\ChatLog.cpp" />
     <ClCompile Include="..\..\src\game\CombatHandler.cpp" />
     <ClCompile Include="..\..\src\game\ConfusedMovementGenerator.cpp" />
     <ClCompile Include="..\..\src\game\Corpse.cpp" />
@@ -426,6 +428,7 @@
     <ClCompile Include="..\..\src\game\Map.cpp" />
     <ClCompile Include="..\..\src\game\MapInstanced.cpp" />
     <ClCompile Include="..\..\src\game\MapManager.cpp" />
+    <ClCompile Include="..\..\src\game\MapUpdater.cpp" />
     <ClCompile Include="..\..\src\game\MiscHandler.cpp" />
     <ClCompile Include="..\..\src\game\MotionMaster.cpp" />
     <ClCompile Include="..\..\src\game\MovementGenerator.cpp" />
@@ -523,6 +526,8 @@
     <ClInclude Include="..\..\src\game\ChannelMgr.h" />
     <ClInclude Include="..\..\src\game\CharacterDatabaseCleaner.h" />
     <ClInclude Include="..\..\src\game\Chat.h" />
+    <ClInclude Include="..\..\src\game\ChatLexicsCutter.h" />
+    <ClInclude Include="..\..\src\game\ChatLog.h" />
     <ClInclude Include="..\..\src\game\ConfusedMovementGenerator.h" />
     <ClInclude Include="..\..\src\game\Corpse.h" />
     <ClInclude Include="..\..\src\game\Creature.h" />
@@ -571,6 +576,7 @@
     <ClInclude Include="..\..\src\game\Map.h" />
     <ClInclude Include="..\..\src\game\MapInstanced.h" />
     <ClInclude Include="..\..\src\game\MapManager.h" />
+    <ClInclude Include="..\..\src\game\MapUpdater.h" />
     <ClInclude Include="..\..\src\game\MapReference.h" />
     <ClInclude Include="..\..\src\game\MapRefManager.h" />
     <ClInclude Include="..\..\src\game\MotionMaster.h" />

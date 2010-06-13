@@ -547,9 +547,9 @@ void Map::Update(const uint32 &t_diff)
         CellArea area = Cell::CalculateCellArea(*plr, GetVisibilityDistance());
         area.ResizeBorders(begin_cell, end_cell);
 
-        for(uint32 x = begin_cell.x_coord; x <= end_cell.x_coord; ++x)
+        for(uint32 x = begin_cell.x_coord; x < end_cell.x_coord; ++x)
         {
-            for(uint32 y = begin_cell.y_coord; y <= end_cell.y_coord; ++y)
+            for(uint32 y = begin_cell.y_coord; y < end_cell.y_coord; ++y)
             {
                 // marked cells are those that have been visited
                 // don't visit the same cell twice
@@ -595,9 +595,9 @@ void Map::Update(const uint32 &t_diff)
             begin_cell << 1; begin_cell -= 1;               // upper left
             end_cell >> 1; end_cell += 1;                   // lower right
 
-            for(uint32 x = begin_cell.x_coord; x <= end_cell.x_coord; ++x)
+            for(uint32 x = begin_cell.x_coord; x < end_cell.x_coord; ++x)
             {
-                for(uint32 y = begin_cell.y_coord; y <= end_cell.y_coord; ++y)
+                for(uint32 y = begin_cell.y_coord; y < end_cell.y_coord; ++y)
                 {
                     // marked cells are those that have been visited
                     // don't visit the same cell twice
@@ -1110,10 +1110,13 @@ uint16 Map::GetAreaFlag(float x, float y, float z) const
             if (x > 5568.0f && x < 6116.0f && y > 282.0f && y < 982.0f && z > 563.0f)
             {
                 // Krasus' Landing (Dalaran), fast check
-                if (x > 5758.77f && x < 5869.03f && y < 510.46f)
+                if (x > 5758.77f && x < 5869.03f && y < 555.75f)
                 {
                     // Krasus' Landing (Dalaran), with open east side
-                    if (y < 449.33f || (x-5813.9f)*(x-5813.9f)+(y-449.33f)*(y-449.33f) < 1864.0f)
+                    if (y < 449.33f ||
+                       (x-5813.90f)*(x-5813.90f)+(y-449.33f)*(y-449.33f) < 1864.0f ||
+                       (x-5824.10f)*(x-5824.10f)+(y-532.27f)*(y-532.27f) < 600.00f ||
+                       (x-5825.84f)*(x-5825.84f)+(y-493.00f)*(y-493.00f) < 462.00f)
                     {
                         areaflag = 2531;                    // Note: also 2633, possible one flight allowed and other not allowed case
                         break;
@@ -1793,7 +1796,7 @@ bool InstanceMap::Add(Player *player)
                 if(playerBind->save != mapSave)
                 {
                     sLog.outError("InstanceMap::Add: player %s(%d) is permanently bound to instance %d,%d,%d,%d,%d,%d but he is being put in instance %d,%d,%d,%d,%d,%d", player->GetName(), player->GetGUIDLow(), playerBind->save->GetMapId(), playerBind->save->GetInstanceId(), playerBind->save->GetDifficulty(), playerBind->save->GetPlayerCount(), playerBind->save->GetGroupCount(), playerBind->save->CanReset(), mapSave->GetMapId(), mapSave->GetInstanceId(), mapSave->GetDifficulty(), mapSave->GetPlayerCount(), mapSave->GetGroupCount(), mapSave->CanReset());
-                    ASSERT(false);
+                    player->RepopAtGraveyard();
                 }
             }
             else
@@ -1826,7 +1829,11 @@ bool InstanceMap::Add(Player *player)
                                 sLog.outError("GroupBind save players: %d, group count: %d", groupBind->save->GetPlayerCount(), groupBind->save->GetGroupCount());
                             else
                                 sLog.outError("GroupBind save NULL");
-                            ASSERT(false);
+                            
+                            if (WorldSafeLocsEntry const *ClosestGrave = sObjectMgr.GetClosestGraveYard(player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), player->GetMapId(), player->GetTeam() ))
+                                player->RepopAtGraveyard();
+                            else player->RelocateToHomebind();
+                            //ASSERT(false);
                         }
                         // if the group/leader is permanently bound to the instance
                         // players also become permanently bound when they enter
@@ -1844,9 +1851,16 @@ bool InstanceMap::Add(Player *player)
                     // set up a solo bind or continue using it
                     if(!playerBind)
                         player->BindToInstance(mapSave, false);
-                    else
+                    else if (playerBind->save != mapSave)
+                    {
                         // cannot jump to a different instance without resetting it
-                        ASSERT(playerBind->save == mapSave);
+                        // lets send him to nearest graveyard or homebind
+                        if (WorldSafeLocsEntry const *ClosestGrave = sObjectMgr.GetClosestGraveYard(player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), player->GetMapId(), player->GetTeam() ))
+                            player->RepopAtGraveyard();
+                        else player->RelocateToHomebind();
+                        error_log("Player %s (GUID %u) logged into instance which is not bound to. Cheat, exploit?",player->GetName(),player->GetGUID());
+                        //ASSERT(playerBind->save == mapSave);
+                    }
                 }
             }
         }
@@ -3007,21 +3021,39 @@ WorldObject* Map::GetWorldObject(ObjectGuid guid)
 void Map::SendObjectUpdates()
 {
     UpdateDataMapType update_players;
+    for(std::set<Object*>::const_iterator it = i_objectsToClientUpdate.begin();it!= i_objectsToClientUpdate.end();++it)
+        (*it)->BuildUpdateData(update_players);
 
-    while(!i_objectsToClientUpdate.empty())
-    {
-        Object* obj = *i_objectsToClientUpdate.begin();
-        i_objectsToClientUpdate.erase(i_objectsToClientUpdate.begin());
-        obj->BuildUpdateData(update_players);
-    }
-
+    i_objectsToClientUpdate.clear();
     WorldPacket packet;                                     // here we allocate a std::vector with a size of 0x10000
     for(UpdateDataMapType::iterator iter = update_players.begin(); iter != update_players.end(); ++iter)
     {
-        iter->second.BuildPacket(&packet);
-        iter->first->GetSession()->SendPacket(&packet);
+        if (iter->second.BuildPacket(&packet))
+            iter->first->GetSession()->SendPacket(&packet);
         packet.clear();                                     // clean the string
     }
+}
+
+bool Map::IsNextZcoordOK(float x, float y, float oldZ, float maxDiff) const
+{
+    // The fastest way to get an accurate result 90% of the time.
+    // Better result can be obtained like 99% accuracy with a ray light, but the cost is too high and the code is too long.
+    maxDiff = maxDiff >= 100.0f ? 10.0f : sqrtf(maxDiff);
+    bool useVmaps = false;
+    if( GetHeight(x, y, oldZ, false) <  GetHeight(x, y, oldZ, true) ) // check use of vmaps
+        useVmaps = true;
+
+    float newZ = GetHeight(x, y, oldZ+maxDiff-2.0f, useVmaps);
+
+    if (fabs(newZ-oldZ) > maxDiff)                              // bad...
+    {
+        useVmaps = !useVmaps;                                     // try change vmap use
+        newZ = GetHeight(x, y, oldZ+maxDiff-2.0f, useVmaps);
+
+        if (fabs(newZ-oldZ) > maxDiff)
+            return false;
+    }
+    return true;
 }
 
 uint32 Map::GenerateLocalLowGuid(HighGuid guidhigh)

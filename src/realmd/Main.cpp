@@ -31,6 +31,7 @@
 #include "revision.h"
 #include "revision_nr.h"
 #include "revision_sql.h"
+#include "revision_andeeria_nr.h"
 #include "Util.h"
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
@@ -101,7 +102,7 @@ extern int main(int argc, char **argv)
 
         if( strcmp(argv[c],"--version") == 0)
         {
-            printf("%s\n", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID));
+            printf("%s\n", _FULLVERSION(REVISION_ANDEERIA_NR, REVISION_NR));
             return 0;
         }
 
@@ -155,7 +156,7 @@ extern int main(int argc, char **argv)
     }
     sLog.Initialize();
 
-    sLog.outString( "%s [realm-daemon]", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID) );
+    sLog.outString( "%s [realm-daemon]", _FULLVERSION(REVISION_ANDEERIA_NR, REVISION_NR) );
     sLog.outString( "<Ctrl-C> to stop.\n" );
     sLog.outString("Using configuration file %s.", cfg_file);
 

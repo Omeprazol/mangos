@@ -254,7 +254,7 @@ AM_CONDITIONAL([MANGOS_BUILD_ACE], [test X$enable_builtin_ace_support = Xyes])
 ## Unify all additional includes/libs in one variable.
 # TODO this looks kinda ugly, but when we add m4 folder I will make it look very pritey ( by Derex ).
 MANGOS_INCLUDES="$ACE_INCLUDES $POSTGRE_INCLUDES $MYSQL_INCLUDES $OPENSSL_INCLUDES $MANGOS_INCLUDES"
-MANGOS_LIBS="$ACE_LIBS $POSTGRE_LIBS $MYSQL_LIBS $ZLIB $COMPATLIB $OPENSSL_LIBS $MANGOS_LIBS"
+MANGOS_LIBS="$ACE_LIBS $POSTGRE_LIBS $MYSQL_LIBS $ZLIB $COMPATLIB $OPENSSL_LIBS $MANGOS_LIBS -ltbb"
 
 ## Export defined variables
 AC_SUBST(DOXYGEN)
@@ -307,7 +307,11 @@ AC_CONFIG_FILES([
    src/mangosd/Makefile
    src/mangosd/mangosd.conf.dist
    src/bindings/Makefile
-   src/bindings/universal/Makefile
+   src/bindings/ScriptDev2/Makefile
+   src/bindings/ScriptDev2/scriptdev2.conf.dist
+   src/bindings/ScriptDev2/config.h
+   src/bindings/ScriptDev2/sql/Makefile
+   src/bindings/ScriptDev2/sql/Updates/Makefile
 ])
 
 ## Configure ACE, if needed

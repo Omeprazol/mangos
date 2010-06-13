@@ -207,6 +207,17 @@ struct AchievementCriteriaEntry
             uint32  castCount;                              // 4
         } cast_spell;
 
+        // ACHIEVEMENT_CRITERIA_TYPE_BG_OBJECTIVE_CAPTURE   = 30
+        struct
+        {
+            uint32  captureID;                              // 3
+            uint32  captureCount;                           // 4
+            //uint32  additionalRequirement1_type;          // 5 
+            //uint32  additionalRequirement1_value;         // 6 
+            //uint32  additionalRequirement2_type;          // 7 
+            //uint32  additionalRequirement2_value;         // 8 
+        } objective_capture;
+
         // ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA = 31
         struct
         {
@@ -411,6 +422,8 @@ struct AchievementCriteriaEntry
         {
             uint32  unused;                                 // 3
             uint32  killCount;                              // 4
+            uint32  flag;                                   // 5
+            uint32  mapid;                                  // 6
         } special_pvp_kill;
 
         // ACHIEVEMENT_CRITERIA_TYPE_FISH_IN_GAMEOBJECT     = 72
@@ -1578,9 +1591,9 @@ struct SpellItemEnchantmentEntry
     uint32      slot;                                       // 32       m_flags
     uint32      GemID;                                      // 33       m_src_itemID
     uint32      EnchantmentCondition;                       // 34       m_condition_id
-    //uint32      requiredSkill;                            // 35       m_requiredSkillID
-    //uint32      requiredSkillValue;                       // 36       m_requiredSkillRank
-                                                            // 37       new in 3.1
+    uint32      requiredSkill;                              // 35       m_requiredSkillID
+    uint32      requiredSkillValue;                         // 36       m_requiredSkillRank
+    uint32      requiredLevel;                              // 37       m_requiredLevel
 };
 
 struct SpellItemEnchantmentConditionEntry

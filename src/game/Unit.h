@@ -69,7 +69,7 @@ enum SpellAuraInterruptFlags
     AURA_INTERRUPT_FLAG_NOT_UNDERWATER              = 0x00000100,   // 8    removed by leaving water
     AURA_INTERRUPT_FLAG_NOT_SHEATHED                = 0x00000200,   // 9    removed by unsheathing
     AURA_INTERRUPT_FLAG_UNK10                       = 0x00000400,   // 10
-    AURA_INTERRUPT_FLAG_UNK11                       = 0x00000800,   // 11
+    AURA_INTERRUPT_FLAG_CAST                        = 0x00000800,   // 11   removed by casting a spell
     AURA_INTERRUPT_FLAG_UNK12                       = 0x00001000,   // 12   removed by attack?
     AURA_INTERRUPT_FLAG_UNK13                       = 0x00002000,   // 13
     AURA_INTERRUPT_FLAG_UNK14                       = 0x00004000,   // 14
@@ -569,12 +569,14 @@ enum UnitFlags
 // Value masks for UNIT_FIELD_FLAGS_2
 enum UnitFlags2
 {
-    UNIT_FLAG2_FEIGN_DEATH          = 0x00000001,
+    UNIT_FLAG2_FEIGN_DEATH      = 0x00000001,
     UNIT_FLAG2_UNK1                 = 0x00000002,           // Hides unit model (show only player equip)
-    UNIT_FLAG2_COMPREHEND_LANG      = 0x00000008,
-    UNIT_FLAG2_FORCE_MOVE           = 0x00000040,
-    UNIT_FLAG2_DISARM               = 0x00000400,           // disarm or something
-    UNIT_FLAG2_REGENERATE_POWER     = 0x00000800,
+    UNIT_FLAG2_COMPREHEND_LANG  = 0x00000008,
+    UNIT_FLAG2_UNK2             = 0x00000010,
+    UNIT_FLAG2_FORCE_MOVE       = 0x00000040,
+    UNIT_FLAG2_DISARM_OFFHAND   = 0x00000080,
+    UNIT_FLAG2_DISARM_RANGED    = 0x00000400,
+    UNIT_FLAG2_REGENERATE_POWER = 0x00000800
 };
 
 /// Non Player Character flags
@@ -1116,6 +1118,24 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 getAttackTimer(WeaponAttackType type) const { return m_attackTimer[type]; }
         bool isAttackReady(WeaponAttackType type = BASE_ATTACK) const { return m_attackTimer[type] == 0; }
         bool haveOffhandWeapon() const;
+        bool IsUseEquipedWeapon(WeaponAttackType attackType) const
+        {
+            bool disarmed = false;
+            switch(attackType)
+            {
+                case BASE_ATTACK:
+                    disarmed = HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISARMED);
+                break;
+                case OFF_ATTACK:
+                    disarmed = HasFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_DISARM_OFFHAND);
+                break;
+                case RANGED_ATTACK:
+                    disarmed = HasFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_DISARM_RANGED);
+                break;
+            }
+
+            return !IsInFeralForm() && !disarmed;
+        }
         bool canReachWithAttack(Unit *pVictim) const;
         uint32 m_extraAttacks;
 
@@ -1276,15 +1296,15 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 GetRangedCritDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_RANGED, 2.2f, 33.0f, damage); }
         uint32 GetSpellCritDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_SPELL, 2.2f, 33.0f, damage); }
 
-        // player or player's pet resilience (-1%), cap 100%
-        uint32 GetMeleeDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 1.0f, 100.0f, damage); }
-        uint32 GetRangedDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 1.0f, 100.0f, damage); }
-        uint32 GetSpellDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 1.0f, 100.0f, damage); }
+        // player or player's pet resilience (-2%), cap 100% (Bizzards hotfix 2010-01-10)
+        uint32 GetMeleeDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 2.0f, 100.0f, damage); }
+        uint32 GetRangedDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 2.0f, 100.0f, damage); }
+        uint32 GetSpellDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 2.0f, 100.0f, damage); } 
 
         float  MeleeSpellMissChance(Unit *pVictim, WeaponAttackType attType, int32 skillDiff, SpellEntry const *spell);
-        SpellMissInfo MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell);
+        SpellMissInfo MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell, bool canMiss = true);
         SpellMissInfo MagicSpellHitResult(Unit *pVictim, SpellEntry const *spell);
-        SpellMissInfo SpellHitResult(Unit *pVictim, SpellEntry const *spell, bool canReflect = false);
+        SpellMissInfo SpellHitResult(Unit *pVictim, SpellEntry const *spell, bool canReflect = false, bool canMiss = true);
 
         float GetUnitDodgeChance()    const;
         float GetUnitParryChance()    const;
@@ -1352,6 +1372,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool IsPolymorphed() const;
 
         bool isFrozen() const;
+        bool isIgnoreUnitState(SpellEntry const *spell);
 
         void RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage);
 
@@ -1362,7 +1383,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         virtual bool IsUnderWater() const;
         bool isInAccessablePlaceFor(Creature const* c) const;
 
-        void SendHealSpellLog(Unit *pVictim, uint32 SpellID, uint32 Damage, uint32 OverHeal, bool critical = false);
+        void SendHealSpellLog(Unit *pVictim, uint32 SpellID, uint32 Damage, uint32 OverHeal, uint32 Absorbed, bool critical = false);
         void SendEnergizeSpellLog(Unit *pVictim, uint32 SpellID, uint32 Damage,Powers powertype);
         void EnergizeBySpell(Unit *pVictim, uint32 SpellID, uint32 Damage, Powers powertype);
         uint32 SpellNonMeleeDamageLog(Unit *pVictim, uint32 spellID, uint32 damage);
@@ -1761,6 +1782,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 CalcArmorReducedDamage(Unit* pVictim, const uint32 damage);
         void CalculateAbsorbAndResist(Unit *pCaster, SpellSchoolMask schoolMask, DamageEffectType damagetype, const uint32 damage, uint32 *absorb, uint32 *resist, bool canReflect = false);
         void CalculateAbsorbResistBlock(Unit *pCaster, SpellNonMeleeDamage *damageInfo, SpellEntry const* spellProto, WeaponAttackType attType = BASE_ATTACK);
+        void CalculateHealAbsorb(Unit *pVictim, const SpellEntry *spellProto, uint32 &HealAmount, uint32 &Absorbed);
 
         void  UpdateWalkMode(Unit* source, bool self = true);
         void  UpdateSpeed(UnitMoveType mtype, bool forced, float ratio = 1.0f);
@@ -1772,6 +1794,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool isHover() const { return HasAuraType(SPELL_AURA_HOVER); }
 
         void KnockBackFrom(Unit* target, float horizontalSpeed, float verticalSpeed);
+        void KnockBackPlayerWithAngle(float angle, float horizontalSpeed, float verticalSpeed);
 
         void _RemoveAllAuraMods();
         void _ApplyAllAuraMods();
@@ -1822,6 +1845,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         PetAuraSet m_petAuras;
         void AddPetAura(PetAura const* petSpell);
         void RemovePetAura(PetAura const* petSpell);
+        uint32 GetModelForForm(ShapeshiftForm form);
 
         // Movement info
         MovementInfo m_movementInfo;

@@ -43,6 +43,7 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "GameEventMgr.h"
+#include "Formulas.h"
 
 #include "Policies/SingletonImp.h"
 
@@ -938,6 +939,8 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
 
         //optimalization : --- we dont need to use selection_pools - each update we select max 2 groups
 
+        uint32 teamId = 0;
+
         for(uint32 i = BG_QUEUE_PREMADE_ALLIANCE; i < BG_QUEUE_NORMAL_ALLIANCE; i++)
         {
             // take the group that joined first
@@ -969,8 +972,11 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
                     && (((*itr_team[BG_TEAM_ALLIANCE])->ArenaTeamRating >= arenaMinRating && (*itr_team[BG_TEAM_ALLIANCE])->ArenaTeamRating <= arenaMaxRating)
                         || (*itr_team[BG_TEAM_ALLIANCE])->JoinTime < discardTime) )
                 {
-                    m_SelectionPools[BG_TEAM_ALLIANCE].AddGroup((*itr_team[BG_TEAM_ALLIANCE]), MaxPlayersPerTeam);
-                    break;
+                    if((*itr_team[BG_TEAM_ALLIANCE])->ArenaTeamId != teamId)
+                    {
+                        m_SelectionPools[BG_TEAM_ALLIANCE].AddGroup((*itr_team[BG_TEAM_ALLIANCE]), MaxPlayersPerTeam);
+                        break;
+                    }
                 }
             }
         }
@@ -985,8 +991,11 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
                     && (((*itr_team[BG_TEAM_HORDE])->ArenaTeamRating >= arenaMinRating && (*itr_team[BG_TEAM_HORDE])->ArenaTeamRating <= arenaMaxRating)
                         || (*itr_team[BG_TEAM_HORDE])->JoinTime < discardTime) )
                 {
-                    m_SelectionPools[BG_TEAM_HORDE].AddGroup((*itr_team[BG_TEAM_HORDE]), MaxPlayersPerTeam);
-                    break;
+                    if((*itr_team[BG_TEAM_HORDE])->ArenaTeamId != teamId)
+                    {
+                        m_SelectionPools[BG_TEAM_HORDE].AddGroup((*itr_team[BG_TEAM_HORDE]), MaxPlayersPerTeam);
+                        break;
+                    }
                 }
             }
         }
@@ -1262,7 +1271,7 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
 {
     uint8 type = (bg->isArena() ? 1 : 0);
                                                             // last check on 3.0.3
-    data->Initialize(MSG_PVP_LOG_DATA, (1+1+4+40*bg->GetPlayerScoresSize()));
+    data->Initialize(MSG_PVP_LOG_DATA, (1 + 1 + 4 + (BG_TEAMS_COUNT * bg->GetMaxPlayersPerTeam() * bg->GetPlayerScoresSize())));
     *data << uint8(type);                                   // type (battleground=0/arena=1)
 
     if(type)                                                // arena
@@ -1296,7 +1305,15 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
         *data << uint8(bg->GetWinner());                    // who win
     }
 
-    *data << (int32)(bg->GetPlayerScoresSize());
+    int32 scoresize = 0;
+    // hack to avoid clientcrash
+    if (bg->GetPlayerScoresSize() > BG_TEAMS_COUNT * bg->GetMaxPlayersPerTeam())
+        scoresize = BG_TEAMS_COUNT * bg->GetMaxPlayersPerTeam();
+    else
+    scoresize = bg->GetPlayerScoresSize();
+    *data << (int32)(scoresize);
+
+    uint32 counter = 0;
 
     for(BattleGround::BattleGroundScoreMap::const_iterator itr = bg->GetPlayerScoresBegin(); itr != bg->GetPlayerScoresEnd(); ++itr)
     {
@@ -1304,6 +1321,19 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
         *data << (int32)itr->second->KillingBlows;
         if (type == 0)
         {
+            if (!bg->IsPlayerInBattleGround(itr->first))
+                sLog.outError("battleground: scoreboard: player not in bg %u", GUID_LOPART(itr->first));
+
+            counter++;
+            // hack to avoid clientcrash
+            if (counter > BG_TEAMS_COUNT * bg->GetMaxPlayersPerTeam())
+            {
+                sLog.outError("battleground: scoreboard: too much players in the scoreboard "
+                    "bgtype: %u free slots, alliance: %u, horde: %u .."
+                    "scoreboardsize: %u", bg->GetTypeID(), bg->GetFreeSlotsForTeam(BG_TEAM_ALLIANCE),
+                    bg->GetFreeSlotsForTeam(BG_TEAM_HORDE), bg->GetPlayerScoresSize());
+                break;
+            }
             *data << (int32)itr->second->HonorableKills;
             *data << (int32)itr->second->Deaths;
             *data << (int32)(itr->second->BonusHonor);
@@ -1321,7 +1351,7 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
         }
         *data << (int32)itr->second->DamageDone;             // damage done
         *data << (int32)itr->second->HealingDone;            // healing done
-        switch(bg->GetTypeID())                              // battleground specific things
+        switch(bg->GetTypeID(true))                          // battleground specific things
         {
             case BATTLEGROUND_AV:
                 *data << (uint32)0x00000005;                // count of next fields
@@ -1357,7 +1387,7 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
                 *data << (int32)0;                          // 0
                 break;
             default:
-                DEBUG_LOG("Unhandled MSG_PVP_LOG_DATA for BG id %u", bg->GetTypeID());
+                DEBUG_LOG("Unhandled MSG_PVP_LOG_DATA for BG id %u", bg->GetTypeID(true));
                 *data << (int32)0;
                 break;
         }
@@ -1476,8 +1506,9 @@ BattleGround * BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeI
     //for arenas there is random map used
     if (bg_template->isArena())
     {
-        BattleGroundTypeId arenas[] = {BATTLEGROUND_NA, BATTLEGROUND_BE, BATTLEGROUND_RL};
-        uint32 arena_num = urand(0,2);
+        // Przem: disabling Ring of Valor
+        BattleGroundTypeId arenas[] = {BATTLEGROUND_NA, BATTLEGROUND_BE, BATTLEGROUND_RL, BATTLEGROUND_DS /*, BATTLEGROUND_RV*/};
+        uint32 arena_num = urand(0,3/*4*/);
         bgTypeId = arenas[arena_num];
         bg_template = GetBattleGroundTemplate(bgTypeId);
         if (!bg_template)
@@ -1485,6 +1516,22 @@ BattleGround * BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeI
             sLog.outError("BattleGround: CreateNewBattleGround - bg template not found for %u", bgTypeId);
             return NULL;
         }
+    }
+
+    bool isRandom = false;
+
+    if(bgTypeId==BATTLEGROUND_RB)
+    {
+        BattleGroundTypeId random_bgs[] = {BATTLEGROUND_AV, BATTLEGROUND_WS, BATTLEGROUND_AB, BATTLEGROUND_EY/*, BATTLEGROUND_SA, BATTLEGROUND_IC*/};
+        uint32 bg_num = urand(0,3/*5*/);
+        bgTypeId = random_bgs[bg_num];
+        bg_template = GetBattleGroundTemplate(bgTypeId);
+        if (!bg_template)
+        {
+            sLog.outError("BattleGround: CreateNewBattleGround - bg template not found for %u", bgTypeId);
+            return NULL;
+        }
+        isRandom = true;
     }
 
     BattleGround *bg = NULL;
@@ -1541,7 +1588,7 @@ BattleGround * BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeI
     // will also set m_bgMap, instanceid
     sMapMgr.CreateBgMap(bg->GetMapId(), bg);
 
-    bg->SetClientInstanceID(CreateClientVisibleInstanceId(bgTypeId, bracketEntry->GetBracketId()));
+    bg->SetClientInstanceID(CreateClientVisibleInstanceId(isRandom ? BATTLEGROUND_RB : bgTypeId, bracketEntry->GetBracketId()));
 
     // reset the new bg (set status to status_wait_queue from status_none)
     bg->Reset();
@@ -1550,6 +1597,9 @@ BattleGround * BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeI
     bg->SetStatus(STATUS_WAIT_JOIN);
     bg->SetArenaType(arenaType);
     bg->SetRated(isRated);
+    bg->SetRandom(isRandom);
+    bg->SetTypeID(isRandom ? BATTLEGROUND_RB : bgTypeId);
+    bg->SetRandomTypeID(bgTypeId);
 
     return bg;
 }
@@ -1785,6 +1835,13 @@ void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket *data, const uint6
     if (!plr)
         return;
 
+    uint32 win_kills = plr->GetRandomWinner() ? BG_REWARD_WINNER_HONOR_LAST : BG_REWARD_WINNER_HONOR_FIRST;
+    uint32 win_arena = plr->GetRandomWinner() ? BG_REWARD_WINNER_ARENA_LAST : BG_REWARD_WINNER_ARENA_FIRST;
+    uint32 loos_kills = plr->GetRandomWinner() ? BG_REWARD_LOOSER_HONOR_LAST : BG_REWARD_LOOSER_HONOR_FIRST;
+
+    win_kills = (uint32)MaNGOS::Honor::hk_honor_at_level(plr->getLevel(), win_kills*4);
+    loos_kills = (uint32)MaNGOS::Honor::hk_honor_at_level(plr->getLevel(), loos_kills*4);
+
     data->Initialize(SMSG_BATTLEFIELD_LIST);
     *data << uint64(guid);                                  // battlemaster guid
     *data << uint8(fromWhere);                              // from where you joined
@@ -1793,20 +1850,22 @@ void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket *data, const uint6
     *data << uint8(0);                                      // unk
 
     // Rewards
-    *data << uint8(0);                                      // 3.3.3 hasWin
-    *data << uint32(0);                                     // 3.3.3 winHonor
-    *data << uint32(0);                                     // 3.3.3 winArena
-    *data << uint32(0);                                     // 3.3.3 lossHonor
+    *data << uint8( plr->GetRandomWinner() );               // 3.3.3 hasWin
+    *data << uint32( win_kills );                           // 3.3.3 winHonor
+    *data << uint32( win_arena );                           // 3.3.3 winArena
+    *data << uint32( loos_kills );                          // 3.3.3 lossHonor
 
-    uint8 isRandom = 0;
+    uint8 isRandom = bgTypeId == BATTLEGROUND_RB;
+
     *data << uint8(isRandom);                               // 3.3.3 isRandom
+
     if(isRandom)
     {
         // Rewards (random)
-        *data << uint8(0);                                  // 3.3.3 hasWin_Random
-        *data << uint32(0);                                 // 3.3.3 winHonor_Random
-        *data << uint32(0);                                 // 3.3.3 winArena_Random
-        *data << uint32(0);                                 // 3.3.3 lossHonor_Random
+        *data << uint8( plr->GetRandomWinner() );           // 3.3.3 hasWin_Random
+        *data << uint32( win_kills );                       // 3.3.3 winHonor_Random
+        *data << uint32( win_arena );                       // 3.3.3 winArena_Random
+        *data << uint32( loos_kills );                      // 3.3.3 lossHonor_Random
     }
 
     if(bgTypeId == BATTLEGROUND_AA)                         // arena
@@ -1862,7 +1921,9 @@ bool BattleGroundMgr::IsArenaType(BattleGroundTypeId bgTypeId)
     return ( bgTypeId == BATTLEGROUND_AA ||
         bgTypeId == BATTLEGROUND_BE ||
         bgTypeId == BATTLEGROUND_NA ||
-        bgTypeId == BATTLEGROUND_RL );
+        bgTypeId == BATTLEGROUND_RL ||
+        bgTypeId == BATTLEGROUND_DS ||
+        bgTypeId == BATTLEGROUND_RV );
 }
 
 BattleGroundQueueTypeId BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId bgTypeId, uint8 arenaType)
@@ -1882,7 +1943,7 @@ BattleGroundQueueTypeId BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId bgType
         case BATTLEGROUND_IC:
             return BATTLEGROUND_QUEUE_IC;
         case BATTLEGROUND_RB:
-            return BATTLEGROUND_QUEUE_NONE;
+            return BATTLEGROUND_QUEUE_RB;
         case BATTLEGROUND_AA:
         case BATTLEGROUND_NA:
         case BATTLEGROUND_RL:
@@ -1921,6 +1982,8 @@ BattleGroundTypeId BattleGroundMgr::BGTemplateId(BattleGroundQueueTypeId bgQueue
             return BATTLEGROUND_SA;
         case BATTLEGROUND_QUEUE_IC:
             return BATTLEGROUND_IC;
+        case BATTLEGROUND_QUEUE_RB:
+            return BATTLEGROUND_RB;
         case BATTLEGROUND_QUEUE_2v2:
         case BATTLEGROUND_QUEUE_3v3:
         case BATTLEGROUND_QUEUE_5v5:

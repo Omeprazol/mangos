@@ -365,12 +365,14 @@ struct RuneInfo
     uint8  BaseRune;
     uint8  CurrentRune;
     uint16 Cooldown;                                        // msec
+    uint32 ConvertedBy;
 };
 
 struct Runes
 {
     RuneInfo runes[MAX_RUNES];
     uint8 runeState;                                        // mask of available runes
+    uint8 needConvert;                                      // mask of runes that need to be converted
 
     void SetRuneState(uint8 index, bool set = true)
     {
@@ -378,6 +380,17 @@ struct Runes
             runeState |= (1 << index);                      // usable
         else
             runeState &= ~(1 << index);                     // on cooldown
+    }
+
+    bool IsRuneNeedsConvert(uint8 index)
+    {
+        if (!needConvert)
+            return false;
+
+        if (needConvert & (1 << index))
+            return true;
+        else
+            return false;
     }
 };
 
@@ -911,6 +924,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOADMAILEDITEMS,
     PLAYER_LOGIN_QUERY_LOADTALENTS,
     PLAYER_LOGIN_QUERY_LOADWEEKLYQUESTSTATUS,
+    PLAYER_LOGIN_QUERY_LOADRANDOMBG,
 
     MAX_PLAYER_LOGIN_QUERY
 };
@@ -1138,7 +1152,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         std::string afkMsg;
         std::string dndMsg;
 
-        uint32 GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 newfacialhair);
+        uint32 GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 newfacialhair, BarberShopStyleEntry const* newSkin=NULL);
 
         PlayerSocial *GetSocial() { return m_social; }
 
@@ -1320,11 +1334,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         void AddArmorProficiency(uint32 newflag) { m_ArmorProficiency |= newflag; }
         uint32 GetWeaponProficiency() const { return m_WeaponProficiency; }
         uint32 GetArmorProficiency() const { return m_ArmorProficiency; }
-        bool IsUseEquipedWeapon( bool mainhand ) const
-        {
-            // disarm applied only to mainhand weapon
-            return !IsInFeralForm() && (!mainhand || !HasFlag(UNIT_FIELD_FLAGS,UNIT_FLAG_DISARMED) );
-        }
         bool IsTwoHandUsed() const
         {
             Item* mainItem = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
@@ -2163,6 +2172,9 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool isTotalImmune();
         bool CanCaptureTowerPoint();
 
+        bool GetRandomWinner() { return m_IsBGRandomWinner; }
+        void SetRandomWinner(bool isWinner);
+
         /*********************************************************/
         /***                    REST SYSTEM                    ***/
         /*********************************************************/
@@ -2204,7 +2216,11 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool isMoving() const { return m_movementInfo.HasMovementFlag(movementFlagsMask); }
         bool isMovingOrTurning() const { return m_movementInfo.HasMovementFlag(movementOrTurningFlagsMask); }
 
-        bool CanFly() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_CAN_FLY); }
+        uint32 Anti__GetLastTeleTime() const { return m_anti_TeleTime; }
+        void Anti__SetLastTeleTime(uint32 TeleTime) { m_anti_TeleTime=TeleTime; }
+        //bool CanFly() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_CAN_FLY); }
+        bool CanFly() const { return m_CanFly;  }
+        void SetCanFly(bool CanFly) { m_CanFly=CanFly; }
         bool IsFlying() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_FLYING); }
         bool IsKnowHowFlyIn(uint32 mapid, uint32 zone, uint32 area) const;
 
@@ -2301,6 +2317,10 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendSavedInstances();
         static void ConvertInstancesToGroup(Player *player, Group *group = NULL, uint64 player_guid = 0);
 
+        // last used pet number (for BG's)
+        uint32 GetLastPetNumber() const { return m_lastpetnumber; }
+        void SetLastPetNumber(uint32 petnumber) { m_lastpetnumber = petnumber; }
+
         /*********************************************************/
         /***                   GROUP SYSTEM                    ***/
         /*********************************************************/
@@ -2342,7 +2362,20 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetBaseRune(uint8 index, RuneType baseRune) { m_runes->runes[index].BaseRune = baseRune; }
         void SetCurrentRune(uint8 index, RuneType currentRune) { m_runes->runes[index].CurrentRune = currentRune; }
         void SetRuneCooldown(uint8 index, uint16 cooldown) { m_runes->runes[index].Cooldown = cooldown; m_runes->SetRuneState(index, (cooldown == 0) ? true : false); }
-        void ConvertRune(uint8 index, RuneType newType);
+        void ConvertRune(uint8 index, RuneType newType, uint32 spellid = 0);
+        void SetConvertedBy(uint8 index, uint32 spellid) { m_runes->runes[index].ConvertedBy = spellid; }
+        void ClearConvertedBy(uint8 index) { m_runes->runes[index].ConvertedBy = 0; }
+        bool IsRuneConvertedBy(uint8 index, uint32 spellid) { return m_runes->runes[index].ConvertedBy == spellid; }
+        void SetNeedConvertRune(uint8 index, bool convert, uint32 spellid = 0)
+        {
+            if (convert)
+                m_runes->needConvert |= (1 << index);                      // need convert
+            else
+                m_runes->needConvert &= ~(1 << index);                     // removed from convert
+
+            if (spellid != 0)
+                SetConvertedBy(index, spellid);
+        }
         void ResyncRunes(uint8 count);
         void AddRunePower(uint8 index);
         void InitRunes();
@@ -2375,6 +2408,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         BgBattleGroundQueueID_Rec m_bgBattleGroundQueueID[PLAYER_MAX_BATTLEGROUND_QUEUES];
         BGData                    m_bgData;
 
+        bool m_IsBGRandomWinner;
+
         /*********************************************************/
         /***                    QUEST SYSTEM                   ***/
         /*********************************************************/
@@ -2400,6 +2435,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _LoadQuestStatus(QueryResult *result);
         void _LoadDailyQuestStatus(QueryResult *result);
         void _LoadWeeklyQuestStatus(QueryResult *result);
+        void _LoadRandomBGStatus(QueryResult *result);
         void _LoadGroup(QueryResult *result);
         void _LoadSkills(QueryResult *result);
         void _LoadSpells(QueryResult *result);
@@ -2551,6 +2587,16 @@ class MANGOS_DLL_SPEC Player : public Unit
         RestType rest_type;
         ////////////////////Rest System/////////////////////
 
+        //movement anticheat
+        uint32 m_anti_lastmovetime;     //last movement time
+        float  m_anti_MovedLen;         //Length of traveled way
+        uint32 m_anti_NextLenCheck;
+        float  m_anti_BeginFallZ;    //alternative falling begin
+        uint32 m_anti_lastalarmtime;    //last time when alarm generated
+        uint32 m_anti_alarmcount;       //alarm counter
+        uint32 m_anti_TeleTime;
+        bool m_CanFly;
+
         // Transports
         Transport * m_transport;
 
@@ -2570,6 +2616,9 @@ class MANGOS_DLL_SPEC Player : public Unit
         uint64 m_auraUpdateMask;
 
         uint64 m_miniPet;
+
+        // last used pet number (for BG's)
+        uint32 m_lastpetnumber;
 
         // Player summoning
         time_t m_summon_expire;

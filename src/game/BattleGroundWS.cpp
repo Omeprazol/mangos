@@ -86,6 +86,35 @@ void BattleGroundWS::Update(uint32 diff)
                 RespawnFlagAfterDrop(HORDE);
             }
         }
+        
+        if (m_FlagState[BG_TEAM_ALLIANCE] == BG_WS_FLAG_STATE_ON_PLAYER && m_FlagState[BG_TEAM_HORDE] == BG_WS_FLAG_STATE_ON_PLAYER)
+        {
+            if (m_AssaultTimer < BG_WS_FOCUSED_ASSAULT)
+            {
+                uint32 spellAssault;
+                if (m_AssaultTimer < diff)
+                    spellAssault = BG_WS_SPELL_BRUTAL_ASSAULT;
+                else 
+                {
+                    spellAssault = BG_WS_SPELL_FOCUSED_ASSAULT;
+                    m_AssaultTimer -= diff;
+                }
+
+                for(uint8 i = 0; i < BG_TEAMS_COUNT; i++)
+                {
+                    Player* carrier = sObjectMgr.GetPlayer(m_FlagKeepers[i]);
+                    if(!carrier)
+                        continue;
+
+                    if(!carrier->HasAura(spellAssault))
+                        carrier->CastSpell(carrier, spellAssault, true);
+                }
+            }
+            else
+                m_AssaultTimer -= diff;
+        }
+        else
+            m_AssaultTimer = BG_WS_BRUTAL_ASSAULT;
 
         if (m_EndTimer <= diff)
         {
@@ -239,6 +268,7 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player *Source)
     UpdateTeamScore(Source->GetTeam());
     // only flag capture should be updated
     UpdatePlayerScore(Source, SCORE_FLAG_CAPTURES, 1);      // +1 flag captures
+    Source->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BG_OBJECTIVE_CAPTURE,1);
 
     if (GetTeamScore(ALLIANCE) == BG_WS_MAX_TEAM_SCORE)
         winner = ALLIANCE;
@@ -321,6 +351,19 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
 
     if (set)
     {
+        if (Source->HasAura(BG_WS_SPELL_BRUTAL_ASSAULT))
+            Source->RemoveAurasDueToSpell(BG_WS_SPELL_BRUTAL_ASSAULT);
+        else if (Source->HasAura(BG_WS_SPELL_FOCUSED_ASSAULT))
+            Source->RemoveAurasDueToSpell(BG_WS_SPELL_FOCUSED_ASSAULT);
+
+        if (Player* carrier = sObjectMgr.GetPlayer(m_FlagKeepers[(Source->GetTeam() == ALLIANCE ? BG_TEAM_ALLIANCE : BG_TEAM_HORDE)]))
+        {
+            if (carrier->HasAura(BG_WS_SPELL_BRUTAL_ASSAULT))
+                carrier->RemoveAurasDueToSpell(BG_WS_SPELL_BRUTAL_ASSAULT);
+            else if (carrier->HasAura(BG_WS_SPELL_FOCUSED_ASSAULT))
+                carrier->RemoveAurasDueToSpell(BG_WS_SPELL_FOCUSED_ASSAULT);
+        }
+
         Source->CastSpell(Source, SPELL_RECENTLY_DROPPED_FLAG, true);
         UpdateFlagState(Source->GetTeam(), 1);
 
@@ -392,6 +435,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
             RespawnFlag(ALLIANCE, false);
             PlaySoundToAll(BG_WS_SOUND_FLAG_RETURNED);
             UpdatePlayerScore(Source, SCORE_FLAG_RETURNS, 1);
+            Source->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BG_OBJECTIVE_CAPTURE,1,1);
         }
         else
         {
@@ -420,6 +464,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
             RespawnFlag(HORDE, false);
             PlaySoundToAll(BG_WS_SOUND_FLAG_RETURNED);
             UpdatePlayerScore(Source, SCORE_FLAG_RETURNS, 1);
+            Source->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BG_OBJECTIVE_CAPTURE,1,1);
         }
         else
         {

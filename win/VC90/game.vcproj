@@ -715,6 +715,22 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\game\ChatLexicsCutter.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\ChatLexicsCutter.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\ChatLog.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\ChatLog.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\game\CombatHandler.cpp"
 				>
 			</File>
@@ -848,6 +864,14 @@
 			</File>
 			<File
 				RelativePath="..\..\src\game\MapManager.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\MapUpdater.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\MapUpdater.cpp"
 				>
 			</File>
 			<File

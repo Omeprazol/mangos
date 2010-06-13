@@ -168,6 +168,7 @@ bool ChatHandler::HandleReloadAllSpellCommand(const char*)
     HandleReloadSpellTargetPositionCommand("a");
     HandleReloadSpellThreatsCommand("a");
     HandleReloadSpellPetAurasCommand("a");
+    HandleReloadSpellDisabledCommand("a");
     return true;
 }
 
@@ -888,6 +889,17 @@ bool ChatHandler::HandleReloadMailLevelRewardCommand(const char* /*arg*/)
     sLog.outString( "Re-Loading Player level dependent mail rewards..." );
     sObjectMgr.LoadMailLevelRewards();
     SendGlobalSysMessage("DB table `mail_level_reward` reloaded.");
+    return true;
+}
+
+bool ChatHandler::HandleReloadSpellDisabledCommand(const char* /*arg*/)
+{
+    sLog.outString( "Re-Loading spell disabled table...");
+
+    sObjectMgr.LoadSpellDisabledEntrys();
+
+    SendGlobalSysMessage("DB table `spell_disabled` reloaded.");
+
     return true;
 }
 
@@ -5432,9 +5444,15 @@ bool ChatHandler::HandleGMFlyCommand(const char* args)
 
     WorldPacket data(12);
     if (strncmp(args, "on", 3) == 0)
+    {
         data.SetOpcode(SMSG_MOVE_SET_CAN_FLY);
+        ((Player*)(target))->SetCanFly(true);
+    }
     else if (strncmp(args, "off", 4) == 0)
+    {
         data.SetOpcode(SMSG_MOVE_UNSET_CAN_FLY);
+        ((Player*)(target))->SetCanFly(false);
+    }
     else
     {
         SendSysMessage(LANG_USE_BOL);

@@ -101,6 +101,7 @@ bool LoginQueryHolder::Initialize()
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADGLYPHS,          "SELECT spec, slot, glyph FROM character_glyphs WHERE guid='%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADMAILS,           "SELECT id,messageType,sender,receiver,subject,body,has_items,expire_time,deliver_time,money,cod,checked,stationery,mailTemplateId FROM mail WHERE receiver = '%u' ORDER BY id DESC", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADMAILEDITEMS,     "SELECT data, text, mail_id, item_guid, item_template FROM mail_items JOIN item_instance ON item_guid = guid WHERE receiver = '%u'", GUID_LOPART(m_guid));
+    res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADRANDOMBG,        "SELECT guid FROM character_battleground_random WHERE guid = '%u'", GUID_LOPART(m_guid));
 
     return res;
 }
@@ -1047,7 +1048,7 @@ void WorldSession::HandleSetPlayerDeclinedNames(WorldPacket& recv_data)
         }
     }
 
-    if(!ObjectMgr::CheckDeclinedNames(GetMainPartOfName(wname, 0), declinedname))
+    if(!ObjectMgr::CheckDeclinedNames(wname, declinedname))
     {
         WorldPacket data(SMSG_SET_PLAYER_DECLINED_NAMES_RESULT, 4+8);
         data << uint32(1);
@@ -1075,8 +1076,8 @@ void WorldSession::HandleAlterAppearance( WorldPacket & recv_data )
 {
     DEBUG_LOG("CMSG_ALTER_APPEARANCE");
 
-    uint32 Hair, Color, FacialHair;
-    recv_data >> Hair >> Color >> FacialHair;
+    uint32 Hair, Color, FacialHair, SkinColor;
+    recv_data >> Hair >> Color >> FacialHair >> SkinColor;
 
     BarberShopStyleEntry const* bs_hair = sBarberShopStyleStore.LookupEntry(Hair);
 
@@ -1086,6 +1087,10 @@ void WorldSession::HandleAlterAppearance( WorldPacket & recv_data )
     BarberShopStyleEntry const* bs_facialHair = sBarberShopStyleStore.LookupEntry(FacialHair);
 
     if(!bs_facialHair || bs_facialHair->type != 2 || bs_facialHair->race != _player->getRace() || bs_facialHair->gender != _player->getGender())
+        return;
+
+    BarberShopStyleEntry const* bs_skinColor = sBarberShopStyleStore.LookupEntry(SkinColor);
+    if( bs_skinColor && (bs_skinColor->type != 3 || bs_skinColor->race != _player->getRace() || bs_skinColor->gender != _player->getGender()))
         return;
 
     uint32 Cost = _player->GetBarberShopCost(bs_hair->hair_id, Color, bs_facialHair->hair_id);
@@ -1113,6 +1118,8 @@ void WorldSession::HandleAlterAppearance( WorldPacket & recv_data )
     _player->SetByteValue(PLAYER_BYTES, 2, uint8(bs_hair->hair_id));
     _player->SetByteValue(PLAYER_BYTES, 3, uint8(Color));
     _player->SetByteValue(PLAYER_BYTES_2, 0, uint8(bs_facialHair->hair_id));
+    if (bs_skinColor)
+        _player->SetByteValue(PLAYER_BYTES, 0, uint8(bs_skinColor->hair_id));
 
     _player->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_VISIT_BARBER_SHOP, 1);
 
