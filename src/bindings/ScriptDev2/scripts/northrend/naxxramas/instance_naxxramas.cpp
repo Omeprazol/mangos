@@ -116,6 +116,9 @@ void instance_naxxramas::OnCreatureCreate(Creature* pCreature)
             if (m_auiEncounter[13] == NOT_STARTED)
                 pCreature->SetVisibility(VISIBILITY_OFF);
             break;
+        case NPC_UNDERSTUDY:
+            lUnderstudyGUID.push_back(pCreature->GetGUID());
+            break;
     }
 }
 

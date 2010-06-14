@@ -45,6 +45,7 @@ enum
     NPC_STALAGG                 = 15929,
     NPC_FEUGEN                  = 15930,
 
+    NPC_UNDERSTUDY              = 16803,
     NPC_ZELIEK                  = 16063,
     NPC_THANE                   = 16064,
     NPC_BLAUMEUX                = 16065,
@@ -167,6 +168,9 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
 
         // faerlina
         std::list<uint64> lFaelinasAdds;
+
+        // ravozious
+        std::list<uint64> lUnderstudyGUID;
 
         // goth
         void SetGothTriggers();
