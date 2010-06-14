@@ -91,7 +91,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
 
     uint32 m_uiTeleportTimer;
     uint32 m_uiShadowboltTimer;
-	uint32 m_uiHarvestsoulTimer;
+    uint32 m_uiHarvestsoulTimer;
 
     void Reset()
     {
@@ -105,9 +105,9 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
 
         m_uiTeleportTimer = 15000;
         m_uiShadowboltTimer = 2500;
-		m_uiHarvestsoulTimer = 15000;
+        m_uiHarvestsoulTimer = 15000;
 		
-		m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
     }
 
     void Aggro(Unit* pWho)
@@ -123,7 +123,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
 
         m_pInstance->SetGothTriggers();
 		
-		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
     }
 
     bool HasPlayersInLeftSide()
@@ -196,7 +196,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
             {
                 if(Unit* pPlayer = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
                 {
-					pAdds->AI()->AttackStart(pPlayer);
+                    pAdds->AI()->AttackStart(pPlayer);
                 }
             --uiCount;
             }
@@ -437,23 +437,23 @@ bool EffectDummyCreature_spell_anchor(Unit* pCaster, uint32 uiSpellId, SpellEffe
                     uiNpcEntry = NPC_SPECT_RIDER;
 
                 if(Creature* pDeathAdds = pGoth->SummonCreature(uiNpcEntry, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 20000))
-				{
-					if(Unit* pPlayer = pGoth->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
-					{
-						pDeathAdds->AI()->AttackStart(pPlayer);
-					}
-				}
+                {
+                    if(Unit* pPlayer = pGoth->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
+                    {
+                        pDeathAdds->AI()->AttackStart(pPlayer);
+                    }
+                }
 
                 if (uiNpcEntry == NPC_SPECT_RIDER)
 				{
                     if(Creature* pDeathSpecial = pGoth->SummonCreature(NPC_SPECT_HORSE, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 20000))
-					{
-					    if(Unit* pPlayer = pGoth->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
-					        {
-						        pDeathSpecial->AI()->AttackStart(pPlayer);
-					        }
-					}
-				}				
+                    {
+                        if(Unit* pPlayer = pGoth->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
+                        {
+                            pDeathSpecial->AI()->AttackStart(pPlayer);
+                        }
+                    }
+                }				
             }
             return true;
         }
