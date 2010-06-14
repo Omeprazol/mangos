@@ -272,7 +272,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
                         DoScriptText(SAY_TELEPORT, m_creature);
                         DoScriptText(EMOTE_TO_FRAY, m_creature);
                         DoCastSpellIfCan(m_creature, SPELL_TELEPORT_RIGHT);
-                        m_creature->GetMotionMaster()->Clear(true, true);
+                        m_creature->Clear(true, true);
                         m_uiPhase = PHASE_GROUND;
                         return;
                     }

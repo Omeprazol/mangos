@@ -168,6 +168,9 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
 
         // faerlina
         std::list<uint64> lFaelinasAdds;
+		
+        // gothik
+        std::list<uint64> lGothikDeathAdds;
 
         // ravozious
         std::list<uint64> lUnderstudyGUID;
