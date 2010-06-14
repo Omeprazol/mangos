@@ -16,8 +16,8 @@
 
 /* ScriptData
 SDName: Boss_Gothik
-SD%Complete: 70
-SDComment: Handle case of raid not splitted in two sides. What should it do if whole raid is at one side??
+SD%Complete: 90
+SDComment: 
 SDCategory: Naxxramas
 EndScriptData */
 
@@ -108,6 +108,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
         m_uiHarvestsoulTimer = 15000;
 		
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        DespawnDeathAdds();
     }
 
     void Aggro(Unit* pWho)
@@ -120,10 +121,15 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
             return;
 
         m_pInstance->SetData(TYPE_GOTHIK, IN_PROGRESS);
-
         m_pInstance->SetGothTriggers();
-		
-        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+    }
+
+    void DamageTaken(Unit* pDoneBy, uint32& uiDamage)
+    {
+        if (m_uiPhase == PHASE_SPEECH || m_uiPhase == PHASE_BALCONY)
+            m_creature->SetHealth(m_creature->GetMaxHealth() );
+        else
+            return;
     }
 
     bool HasPlayersInLeftSide()
@@ -134,13 +140,9 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
             return false;
 
         for(Map::PlayerList::const_iterator itr = lPlayers.begin(); itr != lPlayers.end(); ++itr)
-        {
             if (Player* pPlayer = itr->getSource())
-            {
                 if (!m_pInstance->IsInRightSideGothArea(pPlayer))
                     return true;
-            }
-        }
 
         return false;
     }
@@ -192,15 +194,27 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
             if (uiCount == 0)
                 break;
 
-            if(Creature* pAdds = m_creature->SummonCreature(uiSummonEntry, (*itr)->GetPositionX(), (*itr)->GetPositionY(), (*itr)->GetPositionZ(), (*itr)->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 15000))
+            if(Creature* pAdds = m_creature->SummonCreature(uiSummonEntry, (*itr)->GetPositionX(), (*itr)->GetPositionY(), (*itr)->GetPositionZ(), (*itr)->GetOrientation(), TEMPSUMMON_CORPSE_TIMED_DESPAWN, 15000))
             {
                 if(Unit* pPlayer = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
-                {
                     pAdds->AI()->AttackStart(pPlayer);
-                }
-            --uiCount;
+                --uiCount;
             }
         }
+    }
+
+    void DespawnDeathAdds()
+    {
+        if (m_pInstance->lGothikDeathAdds.empty())
+            return;
+
+        for(std::list<uint64>::iterator itr = m_pInstance->lGothikDeathAdds.begin(); itr != m_pInstance->lGothikDeathAdds.end(); ++itr) 
+        {
+            Creature* pDeathAdds = m_pInstance->instance->GetCreature((*itr));
+            if (pDeathAdds && pDeathAdds->isAlive())
+                pDeathAdds->ForcedDespawn(20000);
+        }
+        m_pInstance->lGothikDeathAdds.clear();
     }
 
     void SummonedCreatureJustDied(Creature* pSummoned)
@@ -258,6 +272,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
                         DoScriptText(SAY_TELEPORT, m_creature);
                         DoScriptText(EMOTE_TO_FRAY, m_creature);
                         DoCastSpellIfCan(m_creature, SPELL_TELEPORT_RIGHT);
+                        m_creature->GetMotionMaster()->Clear(true, true);
                         m_uiPhase = PHASE_GROUND;
                         return;
                     }
@@ -305,9 +320,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
             }
             case PHASE_GROUND:
             case PHASE_END:
-            {
-				m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-				
+            {	
                 if (m_uiPhase == PHASE_GROUND)
                 {
                     if (m_creature->GetHealthPercent() < 30.0f)
@@ -318,6 +331,9 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
                             m_pInstance->SetData(TYPE_GOTHIK, SPECIAL);
                             m_uiPhase = PHASE_END;
                             m_uiShadowboltTimer = 2000;
+                            for (std::list<uint64>::iterator itr = m_pInstance->lGothikDeathAdds.begin(); itr != m_pInstance->lGothikDeathAdds.end(); itr++)
+                                if (Creature* pCreature = m_pInstance->instance->GetCreature(*itr) )
+                                    pCreature->AI()->AttackStart(m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0) );
                             return;
                         }
                     }
@@ -353,7 +369,7 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
                 }
                 else
                     m_uiHarvestsoulTimer -= uiDiff;
-					
+
                 DoMeleeAttackIfReady();                     // possibly no melee at all
                 break;
             }
@@ -436,24 +452,24 @@ bool EffectDummyCreature_spell_anchor(Unit* pCaster, uint32 uiSpellId, SpellEffe
                 else if (uiSpellId == SPELL_C_TO_SKULL)
                     uiNpcEntry = NPC_SPECT_RIDER;
 
-                if(Creature* pDeathAdds = pGoth->SummonCreature(uiNpcEntry, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 20000))
+                if(Creature* pDeathAdds = pGoth->SummonCreature(uiNpcEntry, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_CORPSE_TIMED_DESPAWN, 20000))
                 {
-                    if(Unit* pPlayer = pGoth->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
-                    {
-                        pDeathAdds->AI()->AttackStart(pPlayer);
-                    }
+                    pInstance->lGothikDeathAdds.push_back(pDeathAdds->GetGUID());
+                    if(Unit* pPlayer = pDeathAdds->SelectRandomUnfriendlyTarget(0, 20.0f))
+                        if (pPlayer->GetTypeId() == TYPEID_PLAYER)
+                            pDeathAdds->AI()->AttackStart(pPlayer);
                 }
 
                 if (uiNpcEntry == NPC_SPECT_RIDER)
-				{
-                    if(Creature* pDeathSpecial = pGoth->SummonCreature(NPC_SPECT_HORSE, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 20000))
+                {
+                    if(Creature* pDeathSpecial = pGoth->SummonCreature(NPC_SPECT_HORSE, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_CORPSE_TIMED_DESPAWN, 20000))
                     {
-                        if(Unit* pPlayer = pGoth->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
-                        {
-                            pDeathSpecial->AI()->AttackStart(pPlayer);
-                        }
+                        pInstance->lGothikDeathAdds.push_back(pDeathSpecial->GetGUID());
+                        if(Unit* pPlayer = pDeathSpecial->SelectRandomUnfriendlyTarget(0, 20.0f))
+                            if (pPlayer->GetTypeId() == TYPEID_PLAYER)
+                                pDeathSpecial->AI()->AttackStart(pPlayer);
                     }
-                }				
+                }
             }
             return true;
         }
