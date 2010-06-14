@@ -22,7 +22,7 @@ SDCategory: Swap of Sorrows
 EndScriptData */
 
 /* ContentData
-npc_ragged_john
+npc_galen_goodward
 EndContentData */
 
 #include "precompiled.h"
@@ -60,7 +60,7 @@ struct MANGOS_DLL_DECL npc_galen_goodwardAI : public npc_escortAI
 
     void Reset()
     {
-        m_uiPeriodicSay = 60000;
+        m_uiPeriodicSay = 6000;
     }
 
     void Aggro(Unit* pWho)
