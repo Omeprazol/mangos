@@ -9043,41 +9043,14 @@ void Aura::HandleAuraSafeFall( bool Apply, bool Real )
 
 bool Aura::IsCritFromAbilityAura(Unit* caster, uint32& damage)
 {
-    bool bCanCrit = false;
-
-    switch(m_spellProto->SpellFamilyName)
-    {
-        case SPELLFAMILY_WARLOCK:
-            // Immolate
-            if (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000004))
-                bCanCrit = true;
-            break;
-
-        case SPELLFAMILY_ROGUE:
-            // Rupture
-            if (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000100000))
-                bCanCrit = true;
-            break;
-
-        case SPELLFAMILY_SHAMAN:
-            // Flame Shock
-            if (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000010000000))
-                bCanCrit = true;
-            break;
-
-            default:  break;
-    }
-
     Unit::AuraList const& auras = caster->GetAurasByType(SPELL_AURA_ABILITY_PERIODIC_CRIT);
     for(Unit::AuraList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
     {
         if (!(*itr)->isAffectedOnSpell(GetSpellProto()))
             continue;
-        bCanCrit = true;
-    }
+        if (!caster->IsSpellCrit(GetTarget(), GetSpellProto(), GetSpellSchoolMask(GetSpellProto())))
+            break;
 
-    if (bCanCrit && caster->IsSpellCrit(GetTarget(), GetSpellProto(), GetSpellSchoolMask(GetSpellProto())))
-    {
         damage = caster->SpellCriticalDamageBonus(GetSpellProto(), damage, GetTarget());
         return true;
     }
