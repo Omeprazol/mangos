@@ -26,16 +26,12 @@ EndScriptData */
 
 enum
 {
-    FACTION_TITAN_UNFRIENDLY        = 415,
-    FACTION_TITAN_NEUTRAL           = 416,
-
     SPELL_GROUND_TREMMOR            = 6524,
     SPELL_AWAKEN_EARTHEN_GUARDIAN   = 10252,
     SPELL_STONE_DWARF_AWAKEN_VISUAL = 10254,
     SPELL_AWAKEN_VAULT_WARDER       = 10258,
     SPELL_AWAKEN_EARTHEN_DWARF      = 10259,
     SPELL_ARCHAEDAS_AWAKEN_VISUAL   = 10347,
-    SPELL_USE_ALTAR_VISUAL          = 11206,
 
     SAY_AGGRO                       = -1999821,
     SAY_AWAKE_GUARDIANS             = -1999822,
@@ -121,7 +117,7 @@ struct MANGOS_DLL_DECL boss_archaedasAI : public ScriptedAI
                         break;
                     case 2:
                         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                        m_creature->setFaction(FACTION_TITAN_UNFRIENDLY);
+                        m_creature->setFaction(FACTION_TITAN_HOSTILE);
                         if (Unit* pUnit = Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_EVENT_STARTER)))
                             AttackStart(pUnit);
                         else
@@ -246,7 +242,7 @@ struct MANGOS_DLL_DECL mob_archaeras_addAI : public ScriptedAI
                     break;
                 case 1:
                     m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                    m_creature->setFaction(FACTION_TITAN_UNFRIENDLY);
+                    m_creature->setFaction(FACTION_TITAN_HOSTILE);
                     if (Unit* pUnit = Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_EVENT_STARTER)))
                     {
                         bAwakening = false;
@@ -271,12 +267,12 @@ struct MANGOS_DLL_DECL mob_archaeras_addAI : public ScriptedAI
 
 bool GOHello_go_altar_of_archaedas(Player* pPlayer, GameObject* pGo)
 {
-    ScriptedInstance* m_pInstance = (ScriptedInstance*)pGo->GetInstanceData();
+    instance_uldaman* m_pInstance = (instance_uldaman*)pGo->GetInstanceData();
 
-    if (!pPlayer || !m_pInstance)
+    if (!m_pInstance)
         return false;
 
-    pPlayer->CastSpell(pPlayer, SPELL_USE_ALTAR_VISUAL,true);
+    pPlayer->CastSpell(pPlayer, SPELL_USE_ALTAR_VISUAL, true);
 
     // begin OOC "intro" and store target for Archaedas to attack
     m_pInstance->SetData(TYPE_ARCHAEDAS, SPECIAL);

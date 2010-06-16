@@ -22,7 +22,11 @@ enum
     MOB_HALLSHAPER          = 7077,
     MOB_VAULT_WARDER        = 10120,
 
-    SPELL_STONED            = 10255
+    SPELL_STONED            = 10255,
+    SPELL_USE_ALTAR_VISUAL  = 11206,
+
+    FACTION_TITAN_HOSTILE   = 415,
+    FACTION_TITAN_NEUTRAL   = 416
 };
 
 class MANGOS_DLL_DECL instance_uldaman : public ScriptedInstance

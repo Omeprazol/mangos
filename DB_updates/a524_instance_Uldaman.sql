@@ -1,10 +1,12 @@
 -- UDB development part
--- Vault Warder
+-- Vault Warder, Stone Keeper (slow golems)
 UPDATE creature_template SET speed_run = 0.4 WHERE entry IN (4857,10120);
 
 -- Earthen Custodian
 -- Earthen Guardian
 -- Earthen HallShaper
+-- Vault Warder
+-- Stone Keeper
 -- Achaedas
 UPDATE creature_template SET 
 unit_flags = unit_flags |0x02000000,
@@ -32,3 +34,4 @@ UPDATE creature_template SET ScriptName = 'boss_archaedas' WHERE entry = 2748;
 UPDATE creature_template SET ScriptName = 'mob_archaeras_add' WHERE entry IN (7309,7076,7077,10120);
 UPDATE gameobject_template SET ScriptName = 'go_altar_of_keepers' WHERE entry = 130511;
 UPDATE gameobject_template SET ScriptName = 'go_altar_of_archaedas' WHERE entry = 133234;
+

@@ -211,7 +211,7 @@ void instance_uldaman::SimulateSpellHit(uint32 uiCreatureEntry, uint32 uiSpellEn
     {
        Creature* pTemp = instance->GetCreature(*itr);
        const SpellEntry* pSpell = GetSpellStore()->LookupEntry(uiSpellEntry);
-       if (pSpell && pTemp && pTemp->isAlive() && pTemp->GetEntry() == uiCreatureEntry && 
+       if (pSpell && pTemp && pTemp->isAlive() && pTemp->GetEntry() == uiCreatureEntry &&
            pTemp->HasAura(SPELL_STONED))
            pTemp->AI()->SpellHit(pCaster, pSpell);
     }
