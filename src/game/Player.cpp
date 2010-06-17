@@ -17782,7 +17782,7 @@ void Player::RemoveMiniPet()
     }
 }
 
-Pet* Player::GetMiniPet()
+Pet* Player::GetMiniPet() const
 {
     if(!m_miniPet)
         return NULL;
