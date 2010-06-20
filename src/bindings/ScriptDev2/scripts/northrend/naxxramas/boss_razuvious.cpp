@@ -146,9 +146,9 @@ struct MANGOS_DLL_DECL boss_razuviousAI : public ScriptedAI
         // m_uiCurrentNode+1 != uiPointId ensure us that he won't loop in single waypoint few times
         if (m_pInstance && !m_pInstance->lUnderstudyGUID.empty() && m_uiCurrentNode+1 != uiPointId)
         {
+            pUnderstudy = NULL;
             for (std::list<uint64>::iterator itr = m_pInstance->lUnderstudyGUID.begin(); itr != m_pInstance->lUnderstudyGUID.end(); ++itr)
             {
-                pUnderstudy = NULL;
                 Creature* pTemp = m_pInstance->instance->GetCreature(*itr);
                 if (pTemp && pTemp->isAlive() && pTemp->GetDistance(m_creature) < 4.0f)
                 {
@@ -158,6 +158,7 @@ struct MANGOS_DLL_DECL boss_razuviousAI : public ScriptedAI
                     m_uiOOCSequence = 0;
                     m_uiOOCSequenceTimer = 1000;
                     m_uiCurrentNode = uiPointId;
+                    break;
                 }
             }
         }

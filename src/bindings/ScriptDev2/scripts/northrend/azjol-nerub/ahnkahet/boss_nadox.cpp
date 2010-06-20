@@ -116,15 +116,15 @@ struct MANGOS_DLL_DECL boss_nadoxAI : public ScriptedAI
     bool m_bIsRegularMode;
 
     bool   m_bBerserk;
-    float fHPForNextGuardian;
+    bool   m_bGuardianSummoned;
     uint32 m_uiBroodPlagueTimer;
     uint32 m_uiBroodRageTimer;
     uint32 m_uiSummonTimer;
 
     void Reset()
     {
-        fHPForNextGuardian = 75.0f;
         m_bBerserk = false;
+        m_bGuardianSummoned = false;
         m_uiSummonTimer = 5000;
         m_uiBroodPlagueTimer = 15000;
         m_uiBroodRageTimer = 20000;
@@ -169,18 +169,18 @@ struct MANGOS_DLL_DECL boss_nadoxAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (m_creature->GetHealthPercent() < fHPForNextGuardian)
+        if (!m_bGuardianSummoned && m_creature->GetHealthPercent() < 50.0f)
         {
-            // guardian is summoned at 75%, 50%, 20%
+            // guardian is summoned at 50% of boss HP
             if (Creature* pGuardianEgg = SelectRandomCreatureOfEntryInRange(NPC_AHNKAHAR_GUARDIAN_EGG, 75.0f))
                 pGuardianEgg->CastSpell(pGuardianEgg, SPELL_SUMMON_SWARM_GUARDIAN, false);
 
-            fHPForNextGuardian = fHPForNextGuardian - 25.0f;
+            m_bGuardianSummoned = true;
         }
 
         if (m_uiSummonTimer < uiDiff)
         {
-            DoScriptText(rand()%2?SAY_SUMMON_EGG_1:SAY_SUMMON_EGG_2, m_creature);
+            DoScriptText(urand(0, 1) ? SAY_SUMMON_EGG_1 : SAY_SUMMON_EGG_2, m_creature);
 
             if (Creature* pSwarmerEgg = SelectRandomCreatureOfEntryInRange(NPC_AHNKAHAR_SWARM_EGG, 75.0))
                 pSwarmerEgg->CastSpell(pSwarmerEgg, SPELL_SUMMON_SWARMERS, false);
@@ -213,7 +213,7 @@ struct MANGOS_DLL_DECL boss_nadoxAI : public ScriptedAI
                 m_uiBroodRageTimer -= uiDiff;
         }
 
-        if (!m_bBerserk && (m_creature->GetPositionZ() < 24.0))
+        if (!m_bBerserk && m_creature->GetPositionZ() < 24.0)
         {
             m_bBerserk = true;
             DoCastSpellIfCan(m_creature, SPELL_BERSERK);

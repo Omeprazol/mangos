@@ -40,12 +40,6 @@ enum
     //when cat dies
     SAY_CAT_DIED                        = -1533089,
 
-    //when each of the 4 wing bosses dies
-    SAY_TAUNT1                          = -1533090,
-    SAY_TAUNT2                          = -1533091,
-    SAY_TAUNT3                          = -1533092,
-    SAY_TAUNT4                          = -1533093,
-
     SAY_SUMMON_MINIONS                  = -1533105,         //start of phase 1
 
     EMOTE_PHASE2                        = -1533135,         //start of phase 2
@@ -84,6 +78,8 @@ enum
     SPELL_SHADOW_FISSURE                = 27810,
     SPELL_FROST_BLAST                   = 27808,
 
+    SPELL_CHANNEL_VISUAL                = 29423,
+
     MAX_SOLDIER_COUNT                   = 71,
     MAX_ABOMINATION_COUNT               = 8,
     MAX_BANSHEE_COUNT                   = 8,
@@ -96,8 +92,8 @@ static float M_F_RANGE = 55.0f;                             // ~ range from cent
 enum Phase
 {
     PHASE_INTRO,
-    PHASE_ONE,
-    PHASE_TWO,
+    PHASE_NORMAL,
+    PHASE_GUARDIANS,
 };
 
 struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
@@ -124,41 +120,41 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
     uint32 m_uiShadowFissureTimer;
     uint32 m_uiFrostBlastTimer;
 
-    uint32 m_uiPhaseTimer;
+    uint32 m_uiPhase1Timer;
     uint32 m_uiSoldierTimer;
     uint32 m_uiBansheeTimer;
     uint32 m_uiAbominationTimer;
-    Phase  m_uiPhase;
+    uint8  m_uiPhase;
     uint32 m_uiSoldierCount;
     uint32 m_uiBansheeCount;
     uint32 m_uiAbominationCount;
     uint32 m_uiSummonIntroTimer;
     uint32 m_uiIntroPackCount;
 
-    std::set<uint64> m_lIntroMobs;
+    std::set<uint64> m_lIntroMobsSet;
     std::set<uint64> m_lAddsSet;
 
     void Reset()
     {
-        m_uiFrostBoltTimer = urand(1000, 60000);            //It won't be more than a minute without cast it
-        m_uiFrostBoltNovaTimer = 15000;                     //Cast every 15 seconds
-        m_uiChainsTimer = urand(30000, 60000);              //Cast no sooner than once every 30 seconds
+        m_uiFrostBoltTimer      = urand(1000, 60000);       //It won't be more than a minute without cast it
+        m_uiFrostBoltNovaTimer  = 15000;                    //Cast every 15 seconds
+        m_uiChainsTimer         = urand(30000, 60000);      //Cast no sooner than once every 30 seconds
         m_uiManaDetonationTimer = 20000;                    //Seems to cast about every 20 seconds
-        m_uiShadowFissureTimer = 25000;                     //25 seconds
-        m_uiFrostBlastTimer = urand(30000, 60000);          //Random time between 30-60 seconds
-        m_uiGuardiansTimer = 5000;                          //5 seconds for summoning each Guardian of Icecrown in phase 3
-        m_uiGuardiansCount = 0;
-        m_uiSummonIntroTimer = 0;
-        m_uiIntroPackCount = 0;
+        m_uiShadowFissureTimer  = 25000;                    //25 seconds
+        m_uiFrostBlastTimer     = urand(30000, 60000);      //Random time between 30-60 seconds
+        m_uiGuardiansTimer      = 5000;                     //5 seconds for summoning each Guardian of Icecrown in phase 3
+        m_uiGuardiansCount      = 0;
+        m_uiSummonIntroTimer    = 0;
+        m_uiIntroPackCount      = 0;
 
-        m_uiPhaseTimer = 228000;                            //Phase 1 lasts "3 minutes and 48 seconds"
-        m_uiSoldierTimer = 5000;
-        m_uiBansheeTimer = 5000;
-        m_uiAbominationTimer = 5000;
-        m_uiSoldierCount = 0;
-        m_uiBansheeCount = 0;
-        m_uiAbominationCount = 0;
-        m_uiPhase = PHASE_INTRO;
+        m_uiPhase1Timer         = 228000;                   //Phase 1 lasts "3 minutes and 48 seconds"
+        m_uiSoldierTimer        = 5000;
+        m_uiBansheeTimer        = 5000;
+        m_uiAbominationTimer    = 5000;
+        m_uiSoldierCount        = 0;
+        m_uiBansheeCount        = 0;
+        m_uiAbominationCount    = 0;
+        m_uiPhase               = PHASE_INTRO;
 
         // it may be some spell should be used instead, to control the intro phase
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
@@ -167,7 +163,11 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 
     void KilledUnit(Unit* pVictim)
     {
-        DoScriptText(urand(0, 1) ? SAY_SLAY1 : SAY_SLAY2, m_creature);
+        if (pVictim->GetTypeId() != TYPEID_PLAYER)
+            return;
+
+        if (urand(0, 1))
+            DoScriptText(urand(0, 1) ? SAY_SLAY1 : SAY_SLAY2, m_creature);
     }
 
     void JustDied(Unit* pKiller)
@@ -200,14 +200,14 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
     {
         if (m_pInstance)
         {
-            for(std::set<uint64>::const_iterator itr = m_lIntroMobs.begin(); itr != m_lIntroMobs.end(); ++itr)
+            for(std::set<uint64>::const_iterator itr = m_lIntroMobsSet.begin(); itr != m_lIntroMobsSet.end(); ++itr)
             {
                 if (Creature* pCreature = m_pInstance->instance->GetCreature(*itr))
                     pCreature->ForcedDespawn();
             }
         }
 
-        m_lIntroMobs.clear();
+        m_lIntroMobsSet.clear();
     }
 
     void DespawnAdds()
@@ -235,12 +235,12 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
         switch(uiId)
         {
             case 1: return M_PI_F - M_F_ANGLE;              // south
-            case 2: return (M_PI_F / 2) * 3 - M_F_ANGLE;    // east
+            case 2: return M_PI_F / 2 * 3 - M_F_ANGLE;      // east
             case 3: return M_PI_F / 2 - M_F_ANGLE;          // west
             case 4: return M_PI_F / 4 - M_F_ANGLE;          // north-west
-            case 5: return (M_PI_F / 4) * 7 - M_F_ANGLE;    // north-east
-            case 6: return (M_PI_F / 4) * 5 - M_F_ANGLE;    // south-east
-            case 7: return 3*M_PI_F / 4 - M_F_ANGLE;        // south-west
+            case 5: return M_PI_F / 4 * 7 - M_F_ANGLE;      // north-east
+            case 6: return M_PI_F / 4 * 5 - M_F_ANGLE;      // south-east
+            case 7: return M_PI_F / 4 * 3 - M_F_ANGLE;      // south-west
         }
 
         return M_F_ANGLE;
@@ -253,53 +253,53 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 
         float fAngle = GetLocationAngle(packId+1);
 
-        float fx, fy, fz;
-        m_pInstance->GetChamberCenterCoords(fx, fy, fz);
+        float fX, fY, fZ;
+        m_pInstance->GetChamberCenterCoords(fX, fY, fZ);
 
-        fx += M_F_RANGE * cos(fAngle);
-        fy += M_F_RANGE * sin(fAngle);
-        fz += M_F_HEIGHT;
+        fX += M_F_RANGE * cos(fAngle);
+        fY += M_F_RANGE * sin(fAngle);
+        fZ += M_F_HEIGHT;
 
-        MaNGOS::NormalizeMapCoord(fx);
-        MaNGOS::NormalizeMapCoord(fy);
+        MaNGOS::NormalizeMapCoord(fX);
+        MaNGOS::NormalizeMapCoord(fY);
 
-        for(int i = 0; i < 14; ++i)
+        uint32 uiNpcEntry = NPC_SOUL_WEAVER;
+        
+        for(uint8 uiI = 0; uiI < 14; ++uiI)
         {
-            uint32 uiNpcEntry = NPC_SOUL_WEAVER;
-
-            if (i > 0)
+            if (uiI > 0)
             {
-                if (i < 4)
+                if (uiI < 4)
                     uiNpcEntry = NPC_UNSTOPPABLE_ABOM;
                 else
                     uiNpcEntry = NPC_SOLDIER_FROZEN;
             }
 
-            float ffx, ffy, ffz;
-            m_creature->GetRandomPoint(fx, fy, fz, 12.0f, ffx, ffy, ffz);
+            float fNewX, fNewY, fNewZ;
+            m_creature->GetRandomPoint(fX, fY, fZ, 12.0f, fNewX, fNewY, fNewZ);
 
-            m_creature->SummonCreature(uiNpcEntry, ffx, ffy, ffz, fAngle + M_PI_F, TEMPSUMMON_CORPSE_DESPAWN, 5000);
+            m_creature->SummonCreature(uiNpcEntry, fNewX, fNewY, fNewZ, fAngle + M_PI_F, TEMPSUMMON_CORPSE_DESPAWN, 5000);
         }
     }
 
-    void SummonMob(uint32 type)
+    void SummonMob(uint32 uiType)
     {
         if (!m_pInstance)
             return;
 
-        float fAngle = GetLocationAngle(urand(1,7));
+        float fAngle = GetLocationAngle(urand(1, 7));
 
-        float fx, fy, fz;
-        m_pInstance->GetChamberCenterCoords(fx, fy, fz);
+        float fX, fY, fZ;
+        m_pInstance->GetChamberCenterCoords(fX, fY, fZ);
 
-        fx += M_F_RANGE * cos(fAngle);
-        fy += M_F_RANGE * sin(fAngle);
-        fz += M_F_HEIGHT;
+        fX += M_F_RANGE * cos(fAngle);
+        fY += M_F_RANGE * sin(fAngle);
+        fZ += M_F_HEIGHT;
 
-        MaNGOS::NormalizeMapCoord(fx);
-        MaNGOS::NormalizeMapCoord(fy);
+        MaNGOS::NormalizeMapCoord(fX);
+        MaNGOS::NormalizeMapCoord(fY);
 
-        m_creature->SummonCreature(type, fx, fy, fz, 0.0f, TEMPSUMMON_CORPSE_DESPAWN, 5000);
+        m_creature->SummonCreature(uiType, fX, fY, fZ, 0.0f, TEMPSUMMON_CORPSE_DESPAWN, 5000);
     }
 
     void JustSummoned(Creature* pSummoned)
@@ -321,16 +321,16 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
             case NPC_SOUL_WEAVER:
             {
                 if (m_uiIntroPackCount < 7)
-                    m_lIntroMobs.insert(pSummoned->GetGUID());
+                    m_lIntroMobsSet.insert(pSummoned->GetGUID());
                 else
                 {
                     m_lAddsSet.insert(pSummoned->GetGUID());
 
                     if(m_pInstance)
                     {
-                        float fx, fy, fz;
-                        m_pInstance->GetChamberCenterCoords(fx, fy, fz);
-                        pSummoned->GetMotionMaster()->MovePoint(0, fx, fy, fz);
+                        float fX, fY, fZ;
+                        m_pInstance->GetChamberCenterCoords(fX, fY, fZ);
+                        pSummoned->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
                     }
                 }
 
@@ -356,35 +356,6 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
     {
         if (uiMotionType == POINT_MOTION_TYPE && uiPointId == 0)
             pSummoned->SetInCombatWithZone();
-    }
-
-    Unit* SelectTargetWithMana()
-    {
-        ThreatList const& m_threatlist = m_creature->getThreatManager().getThreatList();
-        if (m_threatlist.empty())
-            return NULL;
-
-        std::list<uint64> manaPositive;
-            
-        for (ThreatList::const_iterator itr = m_threatlist.begin(); itr!= m_threatlist.end(); ++itr)
-        {
-            if (Unit* pTemp = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid()))
-            {
-                //player and has mana
-                if ((pTemp->GetTypeId() == TYPEID_PLAYER) && (pTemp->getPowerType() == POWER_MANA))
-                    manaPositive.push_back(pTemp->GetGUID());
-            }
-        }
-
-        if (!manaPositive.empty())
-        {
-            std::list<uint64>::iterator m_uiPlayerGUID = manaPositive.begin();
-            advance(m_uiPlayerGUID, (rand()%manaPositive.size()));
-            if (Unit* pTemp = Unit::GetUnit(*m_creature, *m_uiPlayerGUID))
-                return pTemp;
-        }
-        
-        return NULL;
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -413,9 +384,9 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
             }
             else
             {
-                if (m_uiPhaseTimer < uiDiff)
+                if (m_uiPhase1Timer < uiDiff)
                 {
-                    m_uiPhase = PHASE_ONE;
+                    m_uiPhase = PHASE_NORMAL;
                     DespawnIntroCreatures();
 
                     m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
@@ -432,7 +403,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
                     };
                 }
                 else
-                    m_uiPhaseTimer -= uiDiff;
+                    m_uiPhase1Timer -= uiDiff;
 
                 if (m_uiSoldierCount < MAX_SOLDIER_COUNT)
                 {
@@ -471,7 +442,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
                 }
             }
         }
-        else // Phase 1 or 2
+        else // normal or guardian phase
         {
             if (m_uiFrostBoltTimer < uiDiff)
             {
@@ -491,30 +462,34 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 
             if (m_uiManaDetonationTimer < uiDiff)
             {
-                if (Unit* pTarget = SelectTargetWithMana())
+                Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
+
+                if (pTarget && pTarget->GetTypeId() == TYPEID_PLAYER && pTarget->getPowerType() == POWER_MANA)
                 {
                     if (DoCastSpellIfCan(pTarget, SPELL_MANA_DETONATION) == CAST_OK)
                     {
                         if (urand(0, 1))
                             DoScriptText(SAY_SPECIAL1_MANA_DET, m_creature);
+
+                        m_uiManaDetonationTimer = 20000;
                     }
                 }
-                m_uiManaDetonationTimer = 20000;
             }
             else
                 m_uiManaDetonationTimer -= uiDiff;
 
             if (m_uiShadowFissureTimer < uiDiff)
             {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                 {
                     if (DoCastSpellIfCan(pTarget, SPELL_SHADOW_FISSURE) == CAST_OK)
                     {
                         if (urand(0, 1))
                             DoScriptText(SAY_SPECIAL3_MANA_DET, m_creature);
+
+                        m_uiShadowFissureTimer = 25000;
                     }
                 }
-                m_uiShadowFissureTimer = 25000;
             }
             else
                 m_uiShadowFissureTimer -= uiDiff;
@@ -548,23 +523,23 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
                     m_uiChainsTimer -= uiDiff;
             }
 
-            if (m_uiPhase == PHASE_ONE)
+            if (m_uiPhase == PHASE_NORMAL)
             {
                 if (m_creature->GetHealthPercent() < 45.0f)
                 {
-                    m_uiPhase = PHASE_TWO;
+                    m_uiPhase = PHASE_GUARDIANS;
                     DoScriptText(SAY_REQUEST_AID, m_creature);
 
-                    //here Lich King should respond to KelThuzad but I don't know which creature to make talk
-                    //so for now just make Kelthuzad says it.
+                    // here Lich King should respond to Kel'Thuzad but I don't know which creature to make talk
+                    // so for now just make Kel'Thuzad says it.
                     DoScriptText(SAY_ANSWER_REQUEST, m_creature);
                 }
             }
-            else if (m_uiPhase == PHASE_TWO && m_uiGuardiansCount < m_uiGuardiansCountMax)
+            else if (m_uiPhase == PHASE_GUARDIANS && m_uiGuardiansCount < m_uiGuardiansCountMax)
             {
                 if (m_uiGuardiansTimer < uiDiff)
                 {
-                    //Summon a Guardian of Icecrown in a random alcove
+                    // Summon a Guardian of Icecrown in a random alcove
                     SummonMob(NPC_GUARDIAN);
                     m_uiGuardiansTimer = 5000;
                 }
