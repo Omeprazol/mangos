@@ -228,6 +228,8 @@ extern void AddSC_instance_old_hillsbrad();
 extern void AddSC_old_hillsbrad();
 extern void AddSC_culling_of_stratholme();                  //Culling of Stratholme
 extern void AddSC_instance_culling_of_stratholme();
+extern void AddSC_dire_maul();                              //Dire Maul
+extern void AddSC_instance_dire_maul();
 extern void AddSC_boss_celebras_the_cursed();               //maraudon
 extern void AddSC_boss_landslide();
 extern void AddSC_boss_noxxion();
@@ -662,6 +664,8 @@ void AddScripts()
     AddSC_old_hillsbrad();
     AddSC_culling_of_stratholme();                          // Culling of Stratholme
     AddSC_instance_culling_of_stratholme();
+    AddSC_dire_maul();                                      // Dire Maul
+    AddSC_instance_dire_maul();
     AddSC_boss_celebras_the_cursed();                       //maraudon
     AddSC_boss_landslide();
     AddSC_boss_noxxion();

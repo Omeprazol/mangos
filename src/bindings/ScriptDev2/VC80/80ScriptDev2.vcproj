@@ -1463,6 +1463,18 @@
 				<Filter
 					Name="dire_maul"
 					>
+					<File
+						RelativePath="..\scripts\kalimdor\dire_maul\dire_maul.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\scripts\kalimdor\dire_maul\instance_dire_maul.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\scripts\kalimdor\dire_maul\dire_maul.h"
+						>
+					</File>
 				</Filter>
 				<Filter
 					Name="maraudon"
