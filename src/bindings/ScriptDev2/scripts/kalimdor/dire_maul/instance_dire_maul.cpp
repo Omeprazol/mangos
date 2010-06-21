@@ -24,7 +24,8 @@ EndScriptData */
 #include "precompiled.h"
 #include "dire_maul.h"
 
-instance_dire_maul::instance_dire_maul(Map* pMap) : ScriptedInstance(pMap)
+instance_dire_maul::instance_dire_maul(Map* pMap) : ScriptedInstance(pMap),
+m_uiConservatoryDoorGUID(0)
 {
     Initialize();
 }
@@ -44,17 +45,21 @@ void instance_dire_maul::OnCreatureCreate(Creature* pCreature)
 
 void instance_dire_maul::OnObjectCreate(GameObject* pGo)
 {
-    /*switch (pGo->GetEntry())
+    switch (pGo->GetEntry())
     {
-        default: break;
-    }*/
+        case GO_CONSERVATORY_DOOR:
+            if (m_auiEncounter[3] == DONE)
+                pGo->SetGoState(GO_STATE_ACTIVE);
+            m_uiConservatoryDoorGUID = pGo->GetGUID();
+            break;
+    }
 }
 
 void instance_dire_maul::SetData(uint32 uiType, uint32 uiData)
 {
     switch(uiType)
     {
-        case TYPE_ZERVIN:
+        case TYPE_ZERVIM:
             m_auiEncounter[0] = uiData;
             break;
         case TYPE_HYDROSPAWN:
@@ -62,6 +67,14 @@ void instance_dire_maul::SetData(uint32 uiType, uint32 uiData)
             break;
         case TYPE_LETHTENDRIS:
             m_auiEncounter[2] = uiData;
+            break;
+        case TYPE_IRONBARK:
+            if (uiData == SPECIAL)
+            {
+                DoUseDoorOrButton(m_uiConservatoryDoorGUID);
+                uiData = DONE;
+            }
+            m_auiEncounter[3] = uiData;
             break;
     }
 
@@ -71,8 +84,7 @@ void instance_dire_maul::SetData(uint32 uiType, uint32 uiData)
 
         std::ostringstream saveStream;
 
-        saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " "
-                << m_auiEncounter[3] << " " << m_auiEncounter[4] << " " << m_auiEncounter[5];
+        saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " " << m_auiEncounter[3];
 
         strInstData = saveStream.str();
         SaveToDB();
@@ -91,7 +103,7 @@ void instance_dire_maul::Load(const char* chrIn)
     OUT_LOAD_INST_DATA(chrIn);
 
     std::istringstream loadStream(chrIn);
-    loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2];
+    loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3];
 
     for(uint8 i = 0; i < MAX_ENCOUNTER; ++i)
     {
@@ -106,9 +118,10 @@ uint32 instance_dire_maul::GetData(uint32 uiType)
 {
     switch (uiType)
     {
-        case TYPE_ZERVIN:       return m_auiEncounter[0]; break;
+        case TYPE_ZERVIM:       return m_auiEncounter[0]; break;
         case TYPE_HYDROSPAWN:   return m_auiEncounter[1]; break;
         case TYPE_LETHTENDRIS:  return m_auiEncounter[2]; break;
+        case TYPE_IRONBARK:     return m_auiEncounter[3]; break;
     }
     return 0;
 }

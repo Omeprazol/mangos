@@ -7,11 +7,14 @@
 
 enum
 {
-    MAX_ENCOUNTER       = 3,
+    MAX_ENCOUNTER           = 4,
 
-    TYPE_ZERVIN         = 0,
-    TYPE_HYDROSPAWN     = 1,
-    TYPE_LETHTENDRIS    = 2
+    TYPE_ZERVIM             = 0,
+    TYPE_HYDROSPAWN         = 1,
+    TYPE_LETHTENDRIS        = 2,
+    TYPE_IRONBARK           = 3,
+
+    GO_CONSERVATORY_DOOR    = 176907
 };
 
 class MANGOS_DLL_DECL instance_dire_maul : public ScriptedInstance
@@ -34,5 +37,7 @@ class MANGOS_DLL_DECL instance_dire_maul : public ScriptedInstance
     protected:
         uint32 m_auiEncounter[MAX_ENCOUNTER];
         std::string strInstData;
+
+        uint64 m_uiConservatoryDoorGUID;
 };
 #endif
