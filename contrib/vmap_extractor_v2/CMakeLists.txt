@@ -21,6 +21,5 @@ ADD_DEFINITIONS("-ggdb")
 ADD_DEFINITIONS("-O3")
 
 include_directories(../../dep/libmpq)
-#add_subdirectory(stormlib)
 
 add_subdirectory(vmapextract)
