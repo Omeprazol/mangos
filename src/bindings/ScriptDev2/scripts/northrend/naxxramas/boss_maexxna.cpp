@@ -16,8 +16,8 @@
 
 /* ScriptData
 SDName: Boss_Maexxna
-SD%Complete: 60
-SDComment: this needs review, and rewrite of the webwrap ability
+SD%Complete: 70
+SDComment: Need to correct web wrap ability
 SDCategory: Naxxramas
 EndScriptData */
 
@@ -26,31 +26,44 @@ EndScriptData */
 
 enum
 {
-    SPELL_WEBWRAP           = 28622,                        //Spell is normally used by the webtrap on the wall NOT by Maexxna
+    EMOTE_SPIN_WEB              = -1533146,
+    EMOTE_SPIDERLING            = -1533147,
+    EMOTE_SPRAY                 = -1533148,
+    EMOTE_BOSS_GENERIC_FRENZY   = -1000005,
 
-    SPELL_WEBSPRAY          = 29484,
-    H_SPELL_WEBSPRAY        = 54125,
-    SPELL_POISONSHOCK       = 28741,
-    H_SPELL_POISONSHOCK     = 54122,
-    SPELL_NECROTICPOISON    = 28776,
-    H_SPELL_NECROTICPOISON  = 54121,
-    SPELL_FRENZY            = 54123,
-    H_SPELL_FRENZY          = 54124,
+    SPELL_WEBWRAP               = 28622,                    //Spell is normally used by the webtrap on the wall NOT by Maexxna
 
-    //spellId invalid
-    SPELL_SUMMON_SPIDERLING = 29434,
-    CREATURE_SPIRDERLING    = 17055,
+    SPELL_WEBSPRAY              = 29484,
+    SPELL_WEBSPRAY_H            = 54125,
+
+    SPELL_POISONSHOCK           = 28741,
+    SPELL_POISONSHOCK_H         = 54122,
+
+    SPELL_NECROTICPOISON        = 28776,
+    SPELL_NECROTICPOISON_H      = 54121,
+
+    SPELL_FRENZY                = 54123,
+    SPELL_FRENZY_H              = 54124,
+
+    NPC_WEB_WRAP                = 16486,
+    NPC_SPIDERLING              = 17055
 };
 
-float fLoc[2][3] =
-{
-    (3546.796,-3869.082,296.450),
-    (3531.271,-3847.424,299.450),
-};
+#define LOC_X1    3546.796f
+#define LOC_Y1    -3869.082f
+#define LOC_Z1    296.450f
 
-struct MANGOS_DLL_DECL mob_webwrapAI : public Scripted_NoMovementAI
+#define LOC_X2    3531.271f
+#define LOC_Y2    -3847.424f
+#define LOC_Z2    299.450f
+
+#define LOC_X3    3497.067f
+#define LOC_Y3    -3843.384f
+#define LOC_Z3    302.384f
+
+struct MANGOS_DLL_DECL npc_web_wrapAI : public ScriptedAI
 {
-    mob_webwrapAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature) {Reset();}
+    npc_web_wrapAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
 
     uint64 m_uiVictimGUID;
 
@@ -59,14 +72,8 @@ struct MANGOS_DLL_DECL mob_webwrapAI : public Scripted_NoMovementAI
         m_uiVictimGUID = 0;
     }
 
-    void JustDied(Unit* pKiller)
-    {
-        if (m_uiVictimGUID)
-        {
-            if (Unit* pVictim = Unit::GetUnit((*m_creature), m_uiVictimGUID))
-                pVictim->RemoveAurasDueToSpell(SPELL_WEBWRAP);
-        }
-    }
+    void MoveInLineOfSight(Unit* pWho) { }
+    void AttackStart(Unit* pWho) { }
 
     void SetVictim(Unit* pVictim)
     {
@@ -77,32 +84,29 @@ struct MANGOS_DLL_DECL mob_webwrapAI : public Scripted_NoMovementAI
         }
     }
 
-    void DamageTaken(Unit* pDoneBy, uint32 &uiDamage)
+    void JustDied(Unit* pKiller)
     {
-        if (uiDamage > m_creature->GetHealth())
+        if (m_uiVictimGUID)
         {
-            if (m_uiVictimGUID)
+            if (Unit* pVictim = Unit::GetUnit(*m_creature, m_uiVictimGUID))
             {
-                if (Unit* pVictim = Unit::GetUnit((*m_creature), m_uiVictimGUID))
+                if (pVictim->isAlive())
                     pVictim->RemoveAurasDueToSpell(SPELL_WEBWRAP);
             }
         }
     }
-
-    void MoveInLineOfSight(Unit* pWho) { }
-    void UpdateAI(const uint32 uiDiff) { }
 };
 
 struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
 {
     boss_maexxnaAI(Creature* pCreature) : ScriptedAI(pCreature)
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        m_pInstance = (instance_naxxramas*)pCreature->GetInstanceData();
         m_bIsRegularMode = pCreature->GetMap()->IsRegularDifficulty();
         Reset();
     }
 
-    ScriptedInstance* m_pInstance;
+    instance_naxxramas* m_pInstance;
     bool m_bIsRegularMode;
 
     uint32 m_uiWebWrapTimer;
@@ -114,11 +118,11 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
 
     void Reset()
     {
-        m_uiWebWrapTimer = 20000;                           //20 sec init, 40 sec normal
-        m_uiWebSprayTimer = 40000;                          //40 seconds
-        m_uiPoisonShockTimer = 20000;                       //20 seconds
-        m_uiNecroticPoisonTimer = 30000;                    //30 seconds
-        m_uiSummonSpiderlingTimer = 30000;                  //30 sec init, 40 sec normal
+        m_uiWebWrapTimer = 20000;                           // 20 sec init, 40 sec normal
+        m_uiWebSprayTimer = 40000;                          // 40 seconds
+        m_uiPoisonShockTimer = 20000;                       // 20 seconds
+        m_uiNecroticPoisonTimer = 30000;                    // 30 seconds
+        m_uiSummonSpiderlingTimer = 30000;                  // 30 sec init, 40 sec normal
         m_bEnraged = false;
     }
 
@@ -142,22 +146,70 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
 
     void DoCastWebWrap()
     {
-        uint8 PlayersCount = 2;
-        if(m_bIsRegularMode)
-            PlayersCount = 1;
+        ThreatList const& tList = m_creature->getThreatManager().getThreatList();
+        std::vector<Unit *> targets;
 
-        for(uint8 i=0; i<PlayersCount; ++i)
+        // This spell doesn't work if we only have 1 player on threat list
+        if (tList.size() < 2)
+            return;
+
+        // begin + 1 , so we don't target the one with the highest threat
+        ThreatList::const_iterator itr = tList.begin();
+        std::advance(itr, 1);
+
+        // store the threat list in a different container
+        for (;itr != tList.end(); ++itr)
         {
-            if(Unit* pPlayer = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,1))
+            Unit* target = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid());
+
+            // only on alive players
+            if (target && target->isAlive() && target->GetTypeId() == TYPEID_PLAYER)
+                targets.push_back(target);
+        }
+
+        // cut down to size if we have more than 3 targets
+        while(targets.size() > 3)
+            targets.erase(targets.begin()+rand()%targets.size());
+
+        int i = 0;
+
+        for(std::vector<Unit *>::iterator iter = targets.begin(); iter!= targets.end(); ++iter, ++i)
+        {
+            // Teleport the 3 targets to a location on the wall and summon a Web Wrap on them
+            switch(i)
             {
-                if (pPlayer && pPlayer->isAlive() && pPlayer->GetTypeId() == TYPEID_PLAYER)
-                {
-                    //DoTeleportPlayer(pPlayer, fLoc[i][0], fLoc[i][1], fLoc[i][2], pPlayer->GetOrientation());
-                    if (Creature* pWrap = m_creature->SummonCreature(16486, pPlayer->GetPositionX(), pPlayer->GetPositionY(),pPlayer->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 120000))
-                        ((mob_webwrapAI*)pWrap->AI())->SetVictim(pPlayer);
-                }
+                case 0:
+                    DoTeleportPlayer((*iter), LOC_X1, LOC_Y1, LOC_Z1, (*iter)->GetOrientation());
+                    if (Creature* pWrap = m_creature->SummonCreature(NPC_WEB_WRAP, LOC_X1, LOC_Y1, LOC_Z1, 0.0f, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 60000))
+                    {
+                        if (npc_web_wrapAI* pWebAI = dynamic_cast<npc_web_wrapAI*>(pWrap->AI()))
+                            pWebAI->SetVictim(*iter);
+                    }
+                    break;
+                case 1:
+                    DoTeleportPlayer((*iter), LOC_X2, LOC_Y2, LOC_Z2, (*iter)->GetOrientation());
+                    if (Creature* pWrap = m_creature->SummonCreature(NPC_WEB_WRAP, LOC_X2, LOC_Y2, LOC_Z2, 0.0f, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 60000))
+                    {
+                        if (npc_web_wrapAI* pWebAI = dynamic_cast<npc_web_wrapAI*>(pWrap->AI()))
+                            pWebAI->SetVictim(*iter);
+                    }
+                    break;
+                case 2:
+                    DoTeleportPlayer((*iter), LOC_X3, LOC_Y3, LOC_Z3, (*iter)->GetOrientation());
+                    if (Creature* pWrap = m_creature->SummonCreature(NPC_WEB_WRAP, LOC_X3, LOC_Y3, LOC_Z3, 0.0f, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 60000))
+                    {
+                        if (npc_web_wrapAI* pWebAI = dynamic_cast<npc_web_wrapAI*>(pWrap->AI()))
+                            pWebAI->SetVictim(*iter);
+                    }
+                    break;
             }
         }
+    }
+
+    void SummonSpiderlings()
+    {
+        for(uint8 i = 0; i < 8; ++i)
+            m_creature->SummonCreature(NPC_SPIDERLING, 0.0f, 0.0f, 0.0f, 0.0f, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 60000);
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -165,14 +217,11 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if(m_bEnraged)
-            if(!m_creature->HasAura(SPELL_FRENZY))
-                DoCast(m_creature, SPELL_FRENZY);
-
         // Web Wrap
         if (m_uiWebWrapTimer < uiDiff)
         {
             DoCastWebWrap();
+            DoScriptText(EMOTE_SPIN_WEB, m_creature);
             m_uiWebWrapTimer = 40000;
         }
         else
@@ -181,8 +230,11 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         // Web Spray
         if (m_uiWebSprayTimer < uiDiff)
         {
-            DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_WEBSPRAY : H_SPELL_WEBSPRAY);
-            m_uiWebSprayTimer = 41000;
+            if (DoCastSpellIfCan(m_creature->getVictim(), m_bIsRegularMode ? SPELL_WEBSPRAY : SPELL_WEBSPRAY_H) == CAST_OK)
+            {
+                DoScriptText(EMOTE_SPRAY, m_creature);
+                m_uiWebSprayTimer = 40000;
+            }
         }
         else
             m_uiWebSprayTimer -= uiDiff;
@@ -190,8 +242,8 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         // Poison Shock
         if (m_uiPoisonShockTimer < uiDiff)
         {
-            DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_POISONSHOCK : H_SPELL_POISONSHOCK);
-            m_uiPoisonShockTimer = 10000;
+            DoCastSpellIfCan(m_creature->getVictim(), m_bIsRegularMode ? SPELL_POISONSHOCK : SPELL_POISONSHOCK_H);
+            m_uiPoisonShockTimer = 20000;
         }
         else
             m_uiPoisonShockTimer -= uiDiff;
@@ -199,7 +251,7 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         // Necrotic Poison
         if (m_uiNecroticPoisonTimer < uiDiff)
         {
-            DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_NECROTICPOISON : H_SPELL_NECROTICPOISON);
+            DoCastSpellIfCan(m_creature->getVictim(), m_bIsRegularMode ? SPELL_NECROTICPOISON : SPELL_NECROTICPOISON_H);
             m_uiNecroticPoisonTimer = 30000;
         }
         else
@@ -208,39 +260,30 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         // Summon Spiderling
         if (m_uiSummonSpiderlingTimer < uiDiff)
         {
-            for(uint8 i=0; i<8; ++i)
-            {
-                Creature* pSpiderling = m_creature->SummonCreature(CREATURE_SPIRDERLING, m_creature->GetPositionX()+urand(2,6), m_creature->GetPositionY()+urand(2,6), m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30000);
-                if(pSpiderling && pSpiderling->AI())
-                {
-                    if(Unit* pPlayer = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
-                        pSpiderling->AI()->AttackStart(pPlayer);
-                }
-            }
-
-            /*
-            if(m_creature)
-                DoCast(m_creature, SPELL_SUMMON_SPIDERLING);
-                */
+            SummonSpiderlings();
+            DoScriptText(EMOTE_SPIDERLING, m_creature);
             m_uiSummonSpiderlingTimer = 40000;
         }
         else
             m_uiSummonSpiderlingTimer -= uiDiff;
 
-        //Enrage if not already enraged and below 30%
+        // Enrage if not already enraged and below 30%
         if (!m_bEnraged && m_creature->GetHealthPercent() < 30.0f)
         {
-            DoCast(m_creature, m_bIsRegularMode ? SPELL_FRENZY : H_SPELL_FRENZY);
-            m_bEnraged = true;
+            if (DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_FRENZY : SPELL_FRENZY_H) == CAST_OK)
+            {
+                DoScriptText(EMOTE_BOSS_GENERIC_FRENZY, m_creature);
+                m_bEnraged = true;
+            }
         }
 
         DoMeleeAttackIfReady();
     }
 };
 
-CreatureAI* GetAI_mob_webwrap(Creature* pCreature)
+CreatureAI* GetAI_npc_web_wrap(Creature* pCreature)
 {
-    return new mob_webwrapAI(pCreature);
+    return new npc_web_wrapAI(pCreature);
 }
 
 CreatureAI* GetAI_boss_maexxna(Creature* pCreature)
@@ -258,7 +301,7 @@ void AddSC_boss_maexxna()
     NewScript->RegisterSelf();
 
     NewScript = new Script;
-    NewScript->Name = "mob_webwrap";
-    NewScript->GetAI = &GetAI_mob_webwrap;
+    NewScript->Name = "npc_web_wrap";
+    NewScript->GetAI = &GetAI_npc_web_wrap;
     NewScript->RegisterSelf();
 }

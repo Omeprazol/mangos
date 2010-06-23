@@ -38,13 +38,13 @@ enum Galen
 
     GO_GALENS_CAGE          = 37118,
 
-    SAY_PERIODIC            = -1998999,
-    SAY_QUEST_ACCEPTED      = -1998998,
-    SAY_ATTACKED_1          = -1998997,
-    SAY_ATTACKED_2          = -1998996,
-    SAY_QUEST_COMPLETE      = -1998995,
-    EMOTE_WHISPER           = -1998994,
-    EMOTE_DISAPPER          = -1998993
+    SAY_PERIODIC            = -1000582,
+    SAY_QUEST_ACCEPTED      = -1000583,
+    SAY_ATTACKED_1          = -1000584,
+    SAY_ATTACKED_2          = -1000585,
+    SAY_QUEST_COMPLETE      = -1000586,
+    EMOTE_WHISPER           = -1000587,
+    EMOTE_DISAPPEAR         = -1000588
 };
 
 struct MANGOS_DLL_DECL npc_galen_goodwardAI : public npc_escortAI
@@ -88,7 +88,7 @@ struct MANGOS_DLL_DECL npc_galen_goodwardAI : public npc_escortAI
                     break;
                 }
             case 21:
-                DoScriptText(EMOTE_DISAPPER, m_creature);
+                DoScriptText(EMOTE_DISAPPEAR, m_creature);
                 break;
         }
     }

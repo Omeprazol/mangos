@@ -358,6 +358,35 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
             pSummoned->SetInCombatWithZone();
     }
 
+    Unit* SelectTargetWithMana()
+    {
+        ThreatList const& m_threatlist = m_creature->getThreatManager().getThreatList();
+
+        if (m_threatlist.empty())
+            return NULL;
+
+        std::list<uint64> manaPositive;
+        for (ThreatList::const_iterator itr = m_threatlist.begin(); itr!= m_threatlist.end(); ++itr)
+        {
+            if (Unit* pTemp = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid()))
+            {
+                //player and has mana
+                if ((pTemp->GetTypeId() == TYPEID_PLAYER) && (pTemp->getPowerType() == POWER_MANA))
+                    manaPositive.push_back(pTemp->GetGUID());
+            }
+        }
+
+        if (!manaPositive.empty())
+        {
+            std::list<uint64>::iterator m_uiPlayerGUID = manaPositive.begin();
+            advance(m_uiPlayerGUID, (rand()%manaPositive.size()));
+
+            if (Unit* pTemp = Unit::GetUnit(*m_creature, *m_uiPlayerGUID))
+                return pTemp;
+        }
+        return NULL;
+    }
+
     void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -462,9 +491,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 
             if (m_uiManaDetonationTimer < uiDiff)
             {
-                Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
-
-                if (pTarget && pTarget->GetTypeId() == TYPEID_PLAYER && pTarget->getPowerType() == POWER_MANA)
+                if (Unit* pTarget = SelectTargetWithMana())
                 {
                     if (DoCastSpellIfCan(pTarget, SPELL_MANA_DETONATION) == CAST_OK)
                     {
@@ -497,6 +524,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
             if (m_uiFrostBlastTimer < uiDiff)
             {
                 if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, (m_bIsRegularMode ? 1 : 0)))
+                {
                     if (DoCastSpellIfCan(pTarget, SPELL_FROST_BLAST) == CAST_OK)
                     {
                         if (urand(0, 1))
@@ -504,6 +532,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 
                         m_uiFrostBlastTimer = urand(30000, 60000);
                     }
+                }
             }
             else
                 m_uiFrostBlastTimer -= uiDiff;

@@ -30,6 +30,27 @@ EndContentData
 #include "precompiled.h"
 #include "follower_ai.h"
 
+enum
+{
+    QUEST_FROM_BEYOND = 12934,
+
+    NPC_AZBARIN       = 30026,
+    NPC_DUKE_SINGEN   = 30019,
+    NPC_ERATHIUS      = 30025,
+    NPC_GARGORAL      = 30024
+};
+
+static float m_afSpawnLocation[] = {5768.71, -2969.29, 273.816};
+static uint32 m_auiBosses[] = {NPC_AZBARIN, NPC_DUKE_SINGEN, NPC_ERATHIUS, NPC_GARGORAL};
+
+bool QuestAccept_npc_gurgthock(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
+{
+    if (pQuest->GetQuestId() == QUEST_FROM_BEYOND)
+        pCreature->SummonCreature(m_auiBosses[urand(0, 3)], m_afSpawnLocation[0], m_afSpawnLocation[1], m_afSpawnLocation[2], 0.0f, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 600000);
+
+    return true;
+}
+
 enum 
 {
     NPC_LAMOOF                          = 28142,
@@ -259,16 +280,22 @@ CreatureAI* GetAI_mob_crusader_trigger(Creature* pCreature)
 
 void AddSC_zuldrak()
 {
-    Script *newscript;
+    Script* pNewScript;
 
-    newscript = new Script;
-    newscript->Name = "mob_crusader";
-    newscript->GetAI = &GetAI_mob_crusader;
-    newscript->RegisterSelf();
 
-    newscript = new Script;
-    newscript->Name = "mob_crusader_trigger";
-    newscript->GetAI = &GetAI_mob_crusader_trigger;
-    newscript->RegisterSelf();
+    pNewScript = new Script;
+    pNewScript->Name = "mob_crusader";
+    pNewScript->GetAI = &GetAI_mob_crusader;
+    pNewScript->RegisterSelf();
 
+    pNewScript = new Script;
+    pNewScript->Name = "mob_crusader_trigger";
+    pNewScript->GetAI = &GetAI_mob_crusader_trigger;
+    pNewScript->RegisterSelf();
+
+    pNewScript = new Script;
+    pNewScript->Name = "npc_gurgthock";
+    pNewScript->pQuestAccept = &QuestAccept_npc_gurgthock;
+    pNewScript->RegisterSelf();
 }
+
