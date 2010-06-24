@@ -115,7 +115,10 @@ void instance_naxxramas::OnCreatureCreate(Creature* pCreature)
         case NPC_SAPPHIRON:
             m_uiSapphironGUID = pCreature->GetGUID();
             if (m_auiEncounter[13] == NOT_STARTED)
+            {
                 pCreature->SetVisibility(VISIBILITY_OFF);
+                pCreature->SetFlag(UNIT_FIELD_FLAGS, (UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+            }
             break;
         case NPC_UNDERSTUDY:
             lUnderstudyGUID.push_back(pCreature->GetGUID());

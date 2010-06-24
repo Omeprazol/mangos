@@ -97,7 +97,6 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`
 
 -- Sapphiron - unable to attack/be attacked while spawned (invisible), also immune to taunt
 UPDATE creature_template SET
-unit_flags = unit_flags |0x02000000,
 flags_extra = flags_extra | 256
 WHERE entry IN (29991,15989);
 
