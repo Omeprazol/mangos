@@ -286,3 +286,77 @@ DELETE FROM character_queststatus WHERE quest IN
 11764,11766,11768,11772,11774,11776,11580,11801,11781,11786,11784
 11840,11842,11844,11848,11850,11853,11584,11837,11857,11860,11862); 
 */
+
+#############################   KALIMDOR    #######################################################################
+-- Honor the Flame! quests (for Horde, Kalimdor)
+DELETE FROM creature_questrelation WHERE quest IN
+(11841,11845,11846,11847,11849,11852,11836,11856,11838,11859,11861,11839);
+DELETE FROM creature_involvedrelation WHERE quest IN
+(11841,11845,11846,11847,11849,11852,11836,11856,11838,11859,11861,11839);
+
+INSERT INTO creature_questrelation VALUES
+(25884,11841), -- Ashenvale
+(25928,11845), -- Desolace
+(25929,11846), -- Durotar (missing)
+(25930,11847), -- Dustwallow Marsh
+(25932,11849), -- Feralas
+(25936,11852), -- Mulgore (missing)
+(25919,11836), -- Silithus
+(25940,11856), -- Stonetalon Mountains
+(25921,11838), -- Tanaris
+(25943,11859), -- The Barrens
+(25945,11861), -- Thousand Needles
+(25922,11839); -- Winterspring
+
+INSERT INTO creature_involvedrelation VALUES
+(25884,11841), -- Ashenvale
+(25928,11845), -- Desolace
+(25929,11846), -- Durotar (missing)
+(25930,11847), -- Dustwallow Marsh
+(25932,11849), -- Feralas
+(25936,11852), -- Mulgore (missing)
+(25919,11836), -- Silithus
+(25940,11856), -- Stonetalon Mountains
+(25921,11838), -- Tanaris
+(25943,11859), -- The Barrens
+(25945,11861), -- Thousand Needles
+(25922,11839); -- Winterspring
+
+UPDATE quest_template SET RequiredRaces = 690 WHERE entry IN 
+(11841,11845,11846,11847,11849,11852,11836,11856,11838,11859,11861,11839);
+
+-- Honor the Flame! quests (Alliance, Kalimdor)
+DELETE FROM creature_questrelation WHERE quest IN
+(11805,11806,11809,11811,11812,11815,11817,11831,11833,11824,11834);
+DELETE FROM creature_involvedrelation WHERE quest IN
+(11805,11806,11809,11811,11812,11815,11817,11831,11833,11824,11834);
+
+INSERT INTO creature_questrelation VALUES
+(25883,11805), -- Ashenvale
+(25888,11806), -- Azuremyst Isle (missing)
+(25891,11809), -- Bloodmyst Isle (missing)
+(25893,11811), -- Darkshore
+(25894,11812), -- Desolace
+(25897,11815), -- Dustwallow Marsh
+(25899,11817), -- Feralas (missing)
+(25914,11831), -- Silithus
+(25916,11833), -- Tanaris
+(25906,11824), -- Teldrassil
+(25917,11834); -- Winterspring
+
+INSERT INTO creature_involvedrelation VALUES
+(25883,11805), -- Ashenvale
+(25888,11806), -- Azuremyst Isle (missing)
+(25891,11809), -- Bloodmyst Isle (missing)
+(25893,11811), -- Darkshore
+(25894,11812), -- Desolace
+(25897,11815), -- Dustwallow Marsh
+(25899,11817), -- Feralas (missing)
+(25914,11831), -- Silithus
+(25916,11833), -- Tanaris
+(25906,11824), -- Teldrassil
+(25917,11834); -- Winterspring
+
+UPDATE quest_template SET RequiredRaces = 1101 WHERE entry IN 
+(11805,11806,11809,11811,11812,11815,11817,11831,11833,11824,11834);
+
