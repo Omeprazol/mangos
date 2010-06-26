@@ -291,6 +291,12 @@ void Unit::Update( uint32 p_time )
     // Or else we may have some SPELL_STATE_FINISHED spells stalled in pointers, that is bad.
     sWorld.m_spellUpdateLock.acquire();
     m_Events.Update( p_time );
+    // End this if unit is despawned
+    if(!IsInWorld())
+    {
+        sWorld.m_spellUpdateLock.release();
+        return;
+    }
     _UpdateSpells( p_time );
     sWorld.m_spellUpdateLock.release();
 
