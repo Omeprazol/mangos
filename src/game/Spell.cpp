@@ -325,6 +325,7 @@ Spell::Spell( Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid o
     ASSERT( caster != NULL && info != NULL );
     ASSERT( info == sSpellStore.LookupEntry( info->Id ) && "`info` must be pointer to sSpellStore element");
 
+    m_destroyed = false;
     if (info->SpellDifficultyId && caster->GetTypeId() != TYPEID_PLAYER && caster->IsInWorld() && caster->GetMap()->IsDungeon())
     {
         if (SpellEntry const* spellEntry = GetSpellEntryByDifficulty(info->SpellDifficultyId, caster->GetMap()->GetDifficulty()))
@@ -335,7 +336,6 @@ Spell::Spell( Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid o
     else
         m_spellInfo = info;
 
-    m_destroyed = false;
     m_caster = caster;
     m_selfContainer = NULL;
     m_triggeringContainer = triggeringContainer;
@@ -790,7 +790,8 @@ void Spell::CleanupTargetList()
         itr->deleted = true;
 
     for(tbb::concurrent_vector<GOTargetInfo>::iterator itr = m_UniqueGOTargetInfo.begin(); itr != m_UniqueGOTargetInfo.end(); ++itr)
-       itr->deleted = true;
+        itr->deleted = true;
+
     m_UniqueItemInfo.clear();
     m_delayMoment = 0;
 }
@@ -826,6 +827,7 @@ void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
     target.targetGUID = targetGUID;                         // Store target GUID
     target.effectMask = immuned ? 0 : (1 << effIndex);      // Store index of effect if not immuned
     target.processed  = false;                              // Effects not apply on target
+    target.deleted = false;
 
     // Calculate hit result
 
@@ -886,6 +888,7 @@ void Spell::AddGOTarget(GameObject* pVictim, SpellEffectIndex effIndex)
     {
         if (ihit->deleted == true)
             continue;
+
         if (targetGUID == ihit->targetGUID)                 // Found in list
         {
             ihit->effectMask |= (1 << effIndex);            // Add only effect mask
@@ -908,7 +911,7 @@ void Spell::AddGOTarget(GameObject* pVictim, SpellEffectIndex effIndex)
         if (dist < 5.0f)
             dist = 5.0f;
         target.timeDelay = (uint64) floor(dist / m_spellInfo->speed * 1000.0f);
-        if (m_delayMoment == 0 || m_delayMoment > target.timeDelay)
+        if (m_delayMoment == 0 || m_delayMoment>target.timeDelay)
             m_delayMoment = target.timeDelay;
     }
     else
@@ -950,17 +953,17 @@ void Spell::AddItemTarget(Item* pitem, SpellEffectIndex effIndex)
 
 void Spell::DoAllEffectOnTarget(TargetInfo *target)
 {
-    if (m_spellInfo->Id <= 0 || m_spellInfo->Id > MAX_SPELL_ID ||  m_spellInfo->Id == 32 || m_spellInfo->Id == 80)
+    if (this->m_spellInfo->Id <= 0 || this->m_spellInfo->Id > MAX_SPELL_ID ||  m_spellInfo->Id == 32 || m_spellInfo->Id == 80)
         return;
 
     if (!target || target == (TargetInfo*)0x10 || target->processed)
-        return;
+return;
+
+    target->processed = true;                               // Target checked in apply effects procedure
 
     Unit* unit = m_caster->GetObjectGuid() == target->targetGUID ? m_caster : ObjectAccessor::GetUnit(*m_caster, target->targetGUID);
     if (!unit)
         return;
-
-    target->processed = true;                               // Target checked in apply effects procedure
 
     // Get mask of effects for target
     uint32 mask = target->effectMask;
@@ -1070,6 +1073,10 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
             (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0004000000000000)))
             if(Aura* dummy = unitTarget->GetDummyAura(m_spellInfo->Id))
                 dummy->GetModifier()->m_amount = damageInfo.damage;
+        
+        // Divine Storm (use m_healthLeech to store damage for all targets)
+        if (m_spellInfo->Id == 53385)
+            m_healthLeech += damageInfo.damage;
 
         caster->DealSpellDamage(&damageInfo, true);
 
@@ -1392,6 +1399,7 @@ bool Spell::IsAliveUnitPresentInTargetList()
     {
         if (ihit->deleted == true)
             continue;
+
         if( ihit->missCondition == SPELL_MISS_NONE && (needAliveTargetMask & ihit->effectMask) )
         {
             Unit *unit = m_caster->GetObjectGuid() == ihit->targetGUID ? m_caster : ObjectAccessor::GetUnit(*m_caster, ihit->targetGUID);
@@ -2764,6 +2772,7 @@ void Spell::cancel()
             {
                 if (ihit->deleted == true)
                     continue;
+
                 if( ihit->missCondition == SPELL_MISS_NONE )
                 {
                     Unit* unit = m_caster->GetObjectGuid() == (*ihit).targetGUID ? m_caster : ObjectAccessor::GetUnit(*m_caster, ihit->targetGUID);
@@ -3082,26 +3091,27 @@ void Spell::handle_immediate()
     // process immediate effects (items, ground, etc.) also initialize some variables
     _handle_immediate_phase();
 
-    for (tbb::concurrent_vector<TargetInfo>::iterator ihit= m_UniqueTargetInfo.begin();ihit != m_UniqueTargetInfo.end();++ihit)
-    {
-        if (m_destroyed == true || ihit == m_UniqueTargetInfo.end() || m_UniqueTargetInfo.size() == 0)
-            break;
+     for (tbb::concurrent_vector<TargetInfo>::iterator ihit= m_UniqueTargetInfo.begin();ihit != m_UniqueTargetInfo.end();++ihit)
+     {
+         if (m_destroyed == true || ihit == m_UniqueTargetInfo.end() || m_UniqueTargetInfo.size() == 0)
+             break;
 
-        if (ihit->deleted == true)
-            continue;
-        
-        DoAllEffectOnTarget(&(*ihit));
-    }
+         if (ihit->deleted == true)
+             continue;
+         
+         DoAllEffectOnTarget(&(*ihit));
+     }
 
-    for (tbb::concurrent_vector<GOTargetInfo>::iterator ihit= m_UniqueGOTargetInfo.begin();ihit != m_UniqueGOTargetInfo.end();++ihit)
-    {
-        if (m_destroyed == true || ihit == m_UniqueGOTargetInfo.end() || m_UniqueGOTargetInfo.size() == 0)
-            break;
+     for (tbb::concurrent_vector<GOTargetInfo>::iterator ihit= m_UniqueGOTargetInfo.begin();ihit != m_UniqueGOTargetInfo.end();++ihit)
+     {
+         if (m_destroyed == true || ihit == m_UniqueGOTargetInfo.end() || m_UniqueGOTargetInfo.size() == 0)
+             break;
 
-        if (ihit->deleted == true)
-            continue;
-        DoAllEffectOnTarget(&(*ihit));
-    }
+         if (ihit->deleted == true)
+             continue;
+
+         DoAllEffectOnTarget(&(*ihit));
+     }
 
     // spell is finished, perform some last features of the spell here
     _handle_finish_phase();
@@ -3124,7 +3134,8 @@ uint64 Spell::handle_delayed(uint64 t_offset)
     }
 
     // now recheck units targeting correctness (need before any effects apply to prevent adding immunity at first effect not allow apply second spell effect and similar cases)
-    for(tbb::concurrent_vector<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)    {
+    for(tbb::concurrent_vector<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+    {
         if (ihit->processed == false)
         {
             if ( ihit->timeDelay <= t_offset )
@@ -3135,7 +3146,7 @@ uint64 Spell::handle_delayed(uint64 t_offset)
     }
 
     // now recheck gameobject targeting correctness
-    for(tbb::concurrent_vector<GOTargetInfo>::iterator ighit = m_UniqueGOTargetInfo.begin(); ighit != m_UniqueGOTargetInfo.end(); ++ighit)
+    for(tbb::concurrent_vector<GOTargetInfo>::iterator ighit= m_UniqueGOTargetInfo.begin(); ighit != m_UniqueGOTargetInfo.end();++ighit)
     {
         if (ighit->processed == false)
         {
@@ -3372,7 +3383,7 @@ void Spell::finish(bool ok)
     if(!ok)
         return;
 
-    // remove spell mods
+    //remove spell mods
     if (m_caster->GetTypeId() == TYPEID_PLAYER)
         ((Player*)m_caster)->RemoveSpellMods(this);
 
@@ -3407,7 +3418,13 @@ void Spell::finish(bool ok)
 
     // Heal caster for all health leech from all targets
     if (m_healthLeech)
-        m_caster->DealHeal(m_caster, uint32(m_healthLeech), m_spellInfo);
+        if (m_spellInfo->Id == 53385)
+        {
+            int32 bp = int32(m_spellInfo->CalculateSimpleValue(EFFECT_INDEX_1) * m_healthLeech / 100);
+            m_caster->CastCustomSpell(m_caster, 54171, &bp, NULL, NULL, true);
+        }
+        else
+            m_caster->DealHeal(m_caster, uint32(m_healthLeech), m_spellInfo);
 
     if (IsMeleeAttackResetSpell())
     {
@@ -3985,8 +4002,9 @@ void Spell::SendChannelStart(uint32 duration)
     {
         for(tbb::concurrent_vector<GOTargetInfo>::const_iterator itr = m_UniqueGOTargetInfo.begin(); itr != m_UniqueGOTargetInfo.end(); ++itr)
         {
-            if (itr->deleted == true)
+            if (itr->deleted)
                 continue;
+
             if(itr->effectMask & (1 << 0) )
             {
                 target = m_caster->GetMap()->GetGameObject(itr->targetGUID);
@@ -6358,9 +6376,9 @@ void Spell::DelayedChannel()
     if(isDelayableNoMore())                                 // Spells may only be delayed twice
         return;
 
-    // check pushback reduce
-    int32 delaytime = GetSpellDuration(m_spellInfo) * 25 / 100;// channeling delay is normally 25% of its time per hit
-    int32 delayReduce = 100;                                // must be initialized to 100 for percent modifiers
+    //check pushback reduce
+    int32 delaytime = GetSpellDuration(m_spellInfo) * 25 / 100; // channeling delay is normally 25% of its time per hit
+    int32 delayReduce = 100;                               // must be initialized to 100 for percent modifiers
     ((Player*)m_caster)->ApplySpellMod(m_spellInfo->Id, SPELLMOD_NOT_LOSE_CASTING_TIME, delayReduce, this);
     delayReduce += m_caster->GetTotalAuraModifier(SPELL_AURA_REDUCE_PUSHBACK) - 100;
     if(delayReduce >= 100)
@@ -6387,7 +6405,7 @@ void Spell::DelayedChannel()
         {
             if (Unit* unit = m_caster->GetObjectGuid() == ihit->targetGUID ? m_caster : ObjectAccessor::GetUnit(*m_caster, ihit->targetGUID))
                 for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
-                    if (ihit->effectMask & (1 << j))
+                    if( ihit->effectMask & (1 << j) )
                         unit->DelayAura(m_spellInfo->Id, SpellEffectIndex(j), delaytime);
 
         }
@@ -6586,12 +6604,12 @@ bool Spell::HaveTargetsForEffect(SpellEffectIndex effect) const
         if(itr->effectMask & (1 << effect))
             return true;
     }
-    
+
     for(tbb::concurrent_vector<ItemTargetInfo>::const_iterator itr = m_UniqueItemInfo.begin(); itr != m_UniqueItemInfo.end(); ++itr)
     {
         if(itr->deleted == true)
             continue;
- 
+
         if(itr->effectMask & (1 << effect))
             return true;
     }
