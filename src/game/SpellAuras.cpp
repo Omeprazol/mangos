@@ -4276,7 +4276,7 @@ void Aura::HandleAuraModDisarm(bool apply, bool Real)
 
     Unit *target = GetTarget();
 
-    if(!apply && target->HasAuraType(SPELL_AURA_MOD_DISARM))
+    if(!apply && target->HasAuraType(GetModifier()->m_auraname))
         return;
 
     uint32 flags = 0;
@@ -4307,9 +4307,9 @@ void Aura::HandleAuraModDisarm(bool apply, bool Real)
     }
 
     if(apply)
-        target->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISARMED);
+        target->SetFlag(field, flags);
     else
-        target->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISARMED);
+        target->RemoveFlag(field, flags);
 
     // only at real add/remove aura
     if (target->GetTypeId() != TYPEID_PLAYER)
@@ -4320,7 +4320,7 @@ void Aura::HandleAuraModDisarm(bool apply, bool Real)
         return;
 
     if (apply)
-        target->SetAttackTime(BASE_ATTACK,BASE_ATTACK_TIME);
+        target->SetAttackTime(attack_type,BASE_ATTACK_TIME);
     else
         ((Player *)target)->SetRegularAttackTime();
 
