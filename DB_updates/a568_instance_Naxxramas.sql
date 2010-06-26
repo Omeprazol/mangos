@@ -225,10 +225,26 @@ UPDATE `creature_template` SET `ScriptName` = 'boss_grobbulus' WHERE `entry` = 1
 
 ####################   boss_razuvious    #########################################################
 
+-- Obedience Crystal
+DELETE FROM npc_spellclick_spells WHERE spell_id = 55479;
+INSERT INTO npc_spellclick_spells VALUES
+(29912,55479,0,0,0,1);
+
+-- UNIT_NPC_FLAG_SPELLCLICK
+UPDATE creature_template SET
+unit_flags = unit_flags | 0x01000000,
+npcflag = 0
+WHERE entry = 29912;
+
+-- Force Obedience focus on Understudy
+DELETE FROM spell_script_target WHERE entry = 55479;
+INSERT INTO spell_Script_target VALUES
+(55479,1,16803);
+
 -- Replaced Razuvious and changed movement to waypoint
 DELETE FROM creature WHERE guid = 128312;
 INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
-('128312','16061','533','3','1','0','1718','2771.68','-3099.22','267.685','3.0109','604800','5','0','3346800','0','0','2');
+('128312','16061','533','3','1','0','1718','2771.68','-3099.22','267.685','3.0109','604800','0','0','3346800','0','0','2');
 
 DELETE FROM creature_movement WHERE id = 128312;
 INSERT INTO `creature_movement` (`id`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`, `textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `wpguid`, `orientation`, `model1`, `model2`) VALUES
@@ -247,3 +263,4 @@ INSERT INTO `creature_movement` (`id`, `point`, `position_x`, `position_y`, `pos
 ('128312','13','2767.05','-3113.45','267.685','0','0','0','0','0','0','0','0','0','0','3.18532','0','0'),
 ('128312','14','2759.36','-3108.59','267.685','0','0','0','0','0','0','0','0','0','0','2.56878','0','0'),
 ('128312','15','2756.45','-3103.54','267.685','0','0','0','0','0','0','0','0','0','0','2.09362','0','0');
+

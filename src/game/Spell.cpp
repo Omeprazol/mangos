@@ -1503,6 +1503,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 38794:                                 // Murmur's Touch (h)
                 case 50988:                                 // Glare of the Tribunal (Halls of Stone)
                 case 59870:                                 // Glare of the Tribunal (h) (Halls of Stone)
+                case 55479:                                 // Forced Obedience (Naxxramas - Razovius encounter)
                     unMaxTargets = 1;
                     break;
                 case 28542:                                 // Life Drain
