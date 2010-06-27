@@ -379,7 +379,7 @@ struct MANGOS_DLL_DECL mob_overseerAI : public ScriptedAI
             {
                 // spawn weavers around overseer in regular distance
                 float x, y, z; 
-                m_creature->GetNearPoint(m_creature, x, y, z, m_creature->GetObjectSize(), SPAWN_DISTANCE, (i*(6.20f/MAX_WEAVERS)));
+                m_creature->GetNearPoint(m_creature, x, y, z, m_creature->GetObjectBoundingRadius(), SPAWN_DISTANCE, (i*(6.20f/MAX_WEAVERS)));
                 if (Creature* pWeaver = m_creature->SummonCreature(MOB_RUNE_WEAVER, x, y, z, 0.0f, TEMPSUMMON_MANUAL_DESPAWN, 0))
                 {
                     WeaverGUID[i] = pWeaver->GetGUID();

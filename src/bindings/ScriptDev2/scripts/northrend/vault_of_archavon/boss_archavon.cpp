@@ -124,7 +124,7 @@ struct MANGOS_DLL_DECL boss_archavonAI : public ScriptedAI
             {
                 // hack
                 float fPosX, fPosY, fPosZ;
-                m_creature->GetClosePoint(fPosX, fPosY, fPosZ, m_creature->GetObjectSize(), 50.0f);
+                m_creature->GetClosePoint(fPosX, fPosY, fPosZ, m_creature->GetObjectBoundingRadius(), 50.0f);
                 pVictim->SendMonsterMove(fPosX, fPosY, fPosZ, SPLINETYPE_NORMAL, SPLINEFLAG_PITCH_UP, 7000);
                 m_uiStompTimer = 1 *MINUTE*IN_MILLISECONDS;
             }

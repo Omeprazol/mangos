@@ -530,7 +530,7 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
         {
             DoPlaySoundToSet(m_creature, SAY_KALECGOS_JOIN);
             float x, y, z;
-            m_creature->GetClosePoint(x, y, z, m_creature->GetObjectSize(), 15.0f, urand(0, 6));
+            m_creature->GetClosePoint(x, y, z, m_creature->GetObjectBoundingRadius(), 15.0f, urand(0, 6));
             if(Creature* cKalecgos = m_creature->SummonCreature(ID_KALECGOS, x, y, z, 0.686f, TEMPSUMMON_TIMED_DESPAWN, 600000))
             {
                 m_uiKalecgosGUID = cKalecgos->GetGUID();
@@ -1108,7 +1108,7 @@ struct MANGOS_DLL_DECL mob_kiljaeden_controllerAI : public Scripted_NoMovementAI
         if(!m_bIsProhetSpawned)
         {
             float x, y, z;
-            m_creature->GetClosePoint(x, y, z, m_creature->GetObjectSize(), 15.0f, urand(0, 6));
+            m_creature->GetClosePoint(x, y, z, m_creature->GetObjectBoundingRadius(), 15.0f, urand(0, 6));
             if (Creature* Velen = m_creature->SummonCreature(ID_VELEN, x, y, z, 3.874f, TEMPSUMMON_TIMED_DESPAWN, 360000))
             {
                 Velen->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);

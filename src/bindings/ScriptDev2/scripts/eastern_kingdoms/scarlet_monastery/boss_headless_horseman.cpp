@@ -346,8 +346,8 @@ struct MANGOS_DLL_DECL boss_headless_horsemanAI : public ScriptedAI
                 {
                     case 21:
                         float x,y,z;
-                        m_creature->GetClosePoint(x,y,z,m_creature->GetObjectSize(),15.0f,0.0f);
-                        if (Creature* pTemp = m_creature->SummonCreature(NPC_HEAD,x,y,z,0,TEMPSUMMON_CORPSE_DESPAWN,0))
+                        m_creature->GetClosePoint(x, y, z, m_creature->GetObjectBoundingRadius(), 15.0f, 0.0f);
+                        if (Creature* pTemp = m_creature->SummonCreature(NPC_HEAD, x, y, z, 0, TEMPSUMMON_CORPSE_DESPAWN, 0))
                             HeadGUID = pTemp->GetGUID();
                         else
                         {
