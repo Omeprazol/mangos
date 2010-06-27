@@ -88,10 +88,7 @@ WHERE entry = 32575;
 
 DELETE FROM creature WHERE id = 32575;
 INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`, `curhealth`, `curmana`, `DeathState`, `MovementType`) VALUES
-('9000019','32575','533','1','1','0','0','2523.25','-2954.26','245.552','2.36946','25','5','0','12600','0','0','0');
-
--- restored gameobject - door spawn that someone deleted :<
--- INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES('65753','181119','533','3','1','2587.96','-3017.17','241.304','3.14159','0','0','1','0','180','0','1');
+('9000019','32575','533','3','1','0','0','2523.25','-2954.26','245.552','2.36946','608000','0','0','12600','0','0','0');
 
 ####################   boss_sapphiron    #########################################################
 
@@ -263,4 +260,3 @@ INSERT INTO `creature_movement` (`id`, `point`, `position_x`, `position_y`, `pos
 ('128312','13','2767.05','-3113.45','267.685','0','0','0','0','0','0','0','0','0','0','3.18532','0','0'),
 ('128312','14','2759.36','-3108.59','267.685','0','0','0','0','0','0','0','0','0','0','2.56878','0','0'),
 ('128312','15','2756.45','-3103.54','267.685','0','0','0','0','0','0','0','0','0','0','2.09362','0','0');
-
