@@ -436,7 +436,7 @@ INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `positi
 
 
 
-DELETE FROM game_event_creature WHERE guid BETWEEN 9000021 AND 9000034;
+DELETE FROM game_event_creature WHERE guid BETWEEN 9000021 AND 9000039;
 INSERT INTO game_event_creature VALUES
 (9000021,1),
 (9000022,1),
@@ -458,7 +458,7 @@ INSERT INTO game_event_creature VALUES
 (9000038,1),
 (9000039,1);
 
-DELETE FROM game_event_gameobject WHERE guid BETWEEN 200090 AND 200108;
+DELETE FROM game_event_gameobject WHERE guid BETWEEN 200090 AND 200112;
 INSERT INTO game_event_gameobject VALUES
 (200090,1),
 (200091,1),
