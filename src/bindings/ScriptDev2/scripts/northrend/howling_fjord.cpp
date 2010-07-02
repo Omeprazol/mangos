@@ -22,6 +22,7 @@ SDCategory: Howling Fjord
 EndScriptData */
 
 #include "precompiled.h"
+#include "escort_ai.h"
 
 /*#######################
 ## Deathstalker Razael ##
@@ -671,6 +672,140 @@ CreatureAI* GetAI_npc_olga(Creature* pCreature)
     return new npc_olgaAI(pCreature);
 }
 
+/*######
+## npc_apothecary_hanes
+######*/
+
+enum Hanes
+{
+    QUEST_TRIAL_OF_FIRE     = 11241,
+    SPELL_HEALING_POTION    = 17534,
+    SPELL_FLAME_PATCH_VIS   = 46836,
+    NPC_FIRE_TRIGGER        = 23968,
+
+    SAY_ESCORT_STARTED      = -1999760,
+    SAY_1ST_WAYPOINT        = -1999759,
+    SAY_2ND_WAYPOINT        = -1999758,
+    SAY_1ST_SET_BURNED      = -1999757,
+    SAY_2ND_SET_BURNED      = -1999756,
+    SAY_3RD_SET_BURNED      = -1999755,
+    YELL_ALL_SETS_BURNED    = -1999754,
+    SAY_ESCORT_COMPLETED    = -1999753
+};
+
+struct MANGOS_DLL_DECL npc_apothecary_hanesAI : public npc_escortAI
+{
+    npc_apothecary_hanesAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
+
+    uint32 m_uiPotionTimer;
+
+    void Reset() 
+    {
+        m_uiPotionTimer = 0;
+    }
+
+    void BurnSupplies()
+    {
+        std::list<Creature*> lFrireTriggers;
+        GetCreatureListWithEntryInGrid(lFrireTriggers, m_creature, NPC_FIRE_TRIGGER, 20.0f);
+        if (lFrireTriggers.empty())
+            return;
+
+        for (std::list<Creature*>::iterator itr = lFrireTriggers.begin(); itr != lFrireTriggers.end(); ++itr)
+        {
+            if ((*itr)->isAlive())
+                (*itr)->CastSpell(*itr, SPELL_FLAME_PATCH_VIS, true);
+        }
+    }
+        
+
+    void WaypointReached(uint32 uiPointId)
+    {
+        switch (uiPointId)
+        {
+            case 0: DoScriptText(SAY_1ST_WAYPOINT, m_creature); break;
+            case 1: DoScriptText(SAY_2ND_WAYPOINT, m_creature); break;
+            case 7:
+            case 11:
+            case 17:
+                m_creature->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_USESTANDING_NOSHEATHE);
+                break;
+            case 18:
+                DoScriptText(YELL_ALL_SETS_BURNED, m_creature);
+                m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LAUGH_NOSHEATHE);
+                break;
+            case 32:
+                if (Player* pPlayer = GetPlayerForEscort())
+                {
+                    m_creature->SetFacingToObject(pPlayer);
+                    DoScriptText(SAY_ESCORT_COMPLETED, m_creature, pPlayer);
+                    pPlayer->AreaExploredOrEventHappens(QUEST_TRIAL_OF_FIRE);
+                }
+        }
+    }
+
+    void WaypointStart(uint32 uiPointId)
+    {
+        switch (uiPointId)
+        {
+            case 8:
+                BurnSupplies();
+                m_creature->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_NONE);
+                DoScriptText(SAY_1ST_SET_BURNED, m_creature);
+                break;
+            case 12:
+                BurnSupplies();
+                m_creature->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_NONE);
+                DoScriptText(SAY_2ND_SET_BURNED, m_creature);
+                break;
+            case 18:
+                BurnSupplies();
+                m_creature->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_STATE_NONE);
+                DoScriptText(SAY_3RD_SET_BURNED, m_creature);
+                break;
+        }
+    }
+
+    void UpdateEscortAI(const uint32 uiDiff)
+    {
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if (m_creature->GetHealthPercent() < 75.0f)
+        {
+            if (m_uiPotionTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature, SPELL_HEALING_POTION);
+                m_uiPotionTimer = 30000;
+            }
+            else
+                m_uiPotionTimer -= uiDiff;
+        }
+        DoMeleeAttackIfReady();
+    }
+
+};
+
+CreatureAI* GetAI_npc_apothecary_hanes(Creature* pCreature)
+{
+    return new npc_apothecary_hanesAI(pCreature);
+}
+
+bool QuestAccept_npc_apothecary_hanes(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
+{
+    if (pQuest->GetQuestId() == QUEST_TRIAL_OF_FIRE)
+    {
+
+        if (npc_apothecary_hanesAI* pEscortAI = dynamic_cast<npc_apothecary_hanesAI*>(pCreature->AI()))
+        {
+            pEscortAI->Start(true, true, pPlayer->GetGUID(), pQuest);
+            pCreature->setFaction(FACTION_ESCORT_H_NEUTRAL_ACTIVE);
+            DoScriptText(SAY_ESCORT_STARTED, pCreature);
+        }
+    }
+    return true;
+}
+
 void AddSC_howling_fjord()
 {
     Script* newscript;
@@ -723,5 +858,11 @@ void AddSC_howling_fjord()
     newscript->Name = "npc_jack_adams";
     newscript->pGossipHello = &GossipHello_npc_jack_adams;
     newscript->pGossipSelect = &GossipSelect_npc_jack_adams;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "npc_apothecary_hanes";
+    newscript->GetAI = &GetAI_npc_apothecary_hanes;
+    newscript->pQuestAccept = &QuestAccept_npc_apothecary_hanes;
     newscript->RegisterSelf();
 }
