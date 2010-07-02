@@ -2931,13 +2931,6 @@ void Spell::cast(bool skipCheck)
                 AddTriggeredSpell(58923); 
             break;
         }
-        case SPELLFAMILY_HUNTER:
-        {
-            // Deterrence
-            if (m_spellInfo->Id == 19263)
-                AddTriggeredSpell(67801);
-            break;
-        }
         case SPELLFAMILY_ROGUE:
             // Fan of Knives (main hand)
             if (m_spellInfo->Id == 51723 && m_caster->GetTypeId() == TYPEID_PLAYER &&
@@ -2951,6 +2944,9 @@ void Spell::cast(bool skipCheck)
             // Lock and Load
             if (m_spellInfo->Id == 56453)
                 AddPrecastSpell(67544);                     // Lock and Load Marker
+            // Deterrence
+            else if (m_spellInfo->Id == 19263)
+                AddTriggeredSpell(67801);
             break;
         }
         case SPELLFAMILY_PALADIN:
