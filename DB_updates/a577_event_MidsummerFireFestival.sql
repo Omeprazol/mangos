@@ -306,6 +306,80 @@ UPDATE creature_template SET npcflag = npcflag|3 WHERE entry IN (25888,25891,258
 UPDATE quest_template SET RequiredRaces = 1101 WHERE entry IN 
 (11805,11806,11809,11811,11812,11815,11817,11831,11833,11824,11834);
 
+-- Desacrate Fire! quests (for Horde, Kalimdor)
+DELETE FROM gameobject_questrelation WHERE quest IN
+(11734,11735,11738,117411741,11744,11746,117611762,11753,11763);
+DELETE FROM gameobject_involvedrelation WHERE quest IN
+(11734,11735,11738,117411741,11744,11746,117611762,11753,11763);
+
+INSERT INTO gameobject_questrelation VALUES
+(187916,11734), -- Ashenvale
+(194032,11735), -- Azuremyst Isle (missing)
+(194035,11738), -- Bloodmyst Isle (missing)
+(187923,11740), -- Darkshore
+(187924,11741), -- Desolace
+(187927,11744), -- Dustwallow Marsh
+(194044,11746), -- Feralas
+(187943,11760), -- Silithus
+(187945,11762), -- Tanaris
+(187936,11753), -- Teldrassil
+(187946,11763); -- Winterspring
+
+INSERT INTO gameobject_involvedrelation VALUES
+(187916,11734), -- Ashenvale
+(194032,11735), -- Azuremyst Isle (missing)
+(194035,11738), -- Bloodmyst Isle (missing)
+(187923,11740), -- Darkshore
+(187924,11741), -- Desolace
+(187927,11744), -- Dustwallow Marsh
+(194044,11746), -- Feralas (missing)
+(187943,11760), -- Silithus
+(187945,11762), -- Tanaris
+(187936,11753), -- Teldrassil
+(187946,11763); -- Winterspring
+
+UPDATE quest_template SET RequiredRaces = 690 WHERE entry IN 
+(11734,11735,11738,117411741,11744,11746,117611762,11753,11763);
+
+
+-- Desacrate Fire! quests (for Alliance, Eastern Kingdoms)
+DELETE FROM gameobject_questrelation WHERE quest IN
+(11765,11769,11770,11771,11773,11777,11800,11780,11802,11783,11785,11803);
+DELETE FROM gameobject_involvedrelation WHERE quest IN
+(11765,11769,11770,11771,11773,11777,11800,11780,11802,11783,11785,11803);
+
+INSERT INTO gameobject_questrelation VALUES
+(187948,11765), -- Ashenvale
+(187957,11769), -- Desolace
+(187965,11770), -- Durotar (missing)
+(187959,11771), -- Dustwallow Marsh
+(187961,11773), -- Feralas
+(187958,11777), -- Mulgore (missing)
+(187950,11800), -- Silithus
+(187968,11780), -- Stonetalon Mountains
+(187952,11802), -- Tanaris
+(187971,11783), -- The Barrens
+(187973,11785), -- Thousand Needles
+(187953,11803); -- Winterspring
+INSERT INTO gameobject_involvedrelation VALUES
+(187948,11765), -- Ashenvale
+(187957,11769), -- Desolace
+(187965,11770), -- Durotar (missing)
+(187959,11771), -- Dustwallow Marsh
+(187961,11773), -- Feralas
+(187958,11777), -- Mulgore (missing)
+(187950,11800), -- Silithus
+(187968,11780), -- Stonetalon Mountains
+(187952,11802), -- Tanaris
+(187971,11783), -- The Barrens
+(187973,11785), -- Thousand Needles
+(187953,11803); -- Winterspring
+
+UPDATE quest_template SET RequiredRaces = 1101 WHERE entry IN 
+(11765,11769,11770,11771,11773,11777,11800,11780,11802,11783,11785,11803);
+
+UPDATE gameobject SET id = 187965 WHERE guid = 709412;
+
 ##################################   Outlands   ##############################################################
 
 -- Honor the Flame! quests (for Horde, Outlands)
@@ -403,13 +477,19 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`
 ('9000038','25929','1','1','1','0','0','150.155','-4710.43','18.5667','5.42709','300','0','0','1','0','0','0'),
 ('9000039','25936','1','1','1','0','0','-2328.75','-621.458','-8.35711','1.20742','300','0','0','1','0','0','0');
 
-DELETE FROM gameobject WHERE id IN (187929,187921,194043,194037,194046);
+DELETE FROM gameobject WHERE id IN (187929,187921,194043,194037,194046,187958,187965,194032,194035,194044);
 INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES
 ('200090','187921','0','1','1','962.293','-1480.73','62.8527','1.43351','0','0','0.65694','0.753943','60','0','1'),
 ('200091','187929','0','1','1','-8246.02','-2641.63','133.155','3.55866','0','0','0.978336','-0.207026','60','0','1'),
 ('200094','194037','530','1','1','9374.44','-6765.66','15.588','4.69717','0','0','0.712466','-0.701707','60','0','1'),
 ('200095','194043','0','1','1','2271.98','378.875','34.5583','6.0265','0','0','0.127989','-0.991776','60','0','1'),
-('200096','194046','530','1','1','7699.7','-6837.28','77.2783','1.30661','0','0','0.607812','0.794081','60','0','1');
+('200096','194046','530','1','1','7699.7','-6837.28','77.2783','1.30661','0','0','0.607812','0.794081','60','0','1'),
+('200121','187958','1','1','1','-2335.55','-633.4','-7.84568','5.91561','0','0','0.182755','-0.983159','60','0','1'),
+('200122','187965','1','1','1','139.864','-4711.21','18.5787','5.23625','0','0','0.499888','-0.86609','60','0','1'),
+('200123','194032','530','1','1','-4225.45','-12298.1','4.32085','5.87454','0','0','0.202906','-0.979198','60','0','1'),
+('200124','194035','530','1','1','-2255.91','-11889.8','27.9443','5.43707','0','0','0.410553','-0.911837','60','0','1'),
+('200125','194044','1','1','1','-4403.11','3482.73','12.4858','6.08972','0','0','0.0965825','-0.995325','60','0','1');
+
 
 
 DELETE FROM gameobject WHERE guid IN (200092,200093,200097,200098,200099,200100,200101,200102,200103,200104,200105,
@@ -458,7 +538,7 @@ INSERT INTO game_event_creature VALUES
 (9000038,1),
 (9000039,1);
 
-DELETE FROM game_event_gameobject WHERE guid BETWEEN 200090 AND 200112;
+DELETE FROM game_event_gameobject WHERE guid BETWEEN 200090 AND 200112 OR guid BETWEEN 200121 AND 200125;
 INSERT INTO game_event_gameobject VALUES
 (200090,1),
 (200091,1),
@@ -482,5 +562,10 @@ INSERT INTO game_event_gameobject VALUES
 (200109,1),
 (200110,1),
 (200111,1),
-(200112,1);
+(200112,1),
+(200121,1),
+(200122,1),
+(200123,1),
+(200124,1),
+(200125,1);
 */
