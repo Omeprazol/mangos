@@ -308,10 +308,9 @@ UPDATE quest_template SET RequiredRaces = 1101 WHERE entry IN
 
 -- Desacrate Fire! quests (for Horde, Kalimdor)
 DELETE FROM gameobject_questrelation WHERE quest IN
-(11734,11735,11738,117411741,11744,11746,117611762,11753,11763);
+(11734,11735,11738,11740,11741,11744,11746,11760,11762,11753,11763);
 DELETE FROM gameobject_involvedrelation WHERE quest IN
-(11734,11735,11738,117411741,11744,11746,117611762,11753,11763);
-
+(11734,11735,11738,11740,11741,11744,11746,11760,11762,11753,11763);
 INSERT INTO gameobject_questrelation VALUES
 (187916,11734), -- Ashenvale
 (194032,11735), -- Azuremyst Isle (missing)
@@ -339,7 +338,7 @@ INSERT INTO gameobject_involvedrelation VALUES
 (187946,11763); -- Winterspring
 
 UPDATE quest_template SET RequiredRaces = 690 WHERE entry IN 
-(11734,11735,11738,117411741,11744,11746,117611762,11753,11763);
+(11734,11735,11738,11740,11741,11744,11746,11760,11762,11753,11763);
 
 
 -- Desacrate Fire! quests (for Alliance, Eastern Kingdoms)
