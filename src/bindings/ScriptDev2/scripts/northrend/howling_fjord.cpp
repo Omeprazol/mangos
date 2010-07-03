@@ -706,12 +706,12 @@ struct MANGOS_DLL_DECL npc_apothecary_hanesAI : public npc_escortAI
 
     void BurnSupplies()
     {
-        std::list<Creature*> lFrireTriggers;
-        GetCreatureListWithEntryInGrid(lFrireTriggers, m_creature, NPC_FIRE_TRIGGER, 20.0f);
-        if (lFrireTriggers.empty())
+        std::list<Creature*> lFireTriggers;
+        GetCreatureListWithEntryInGrid(lFireTriggers, m_creature, NPC_FIRE_TRIGGER, 20.0f);
+        if (lFireTriggers.empty())
             return;
 
-        for (std::list<Creature*>::iterator itr = lFrireTriggers.begin(); itr != lFrireTriggers.end(); ++itr)
+        for (std::list<Creature*>::iterator itr = lFireTriggers.begin(); itr != lFireTriggers.end(); ++itr)
         {
             if ((*itr)->isAlive())
                 (*itr)->CastSpell(*itr, SPELL_FLAME_PATCH_VIS, true);
@@ -741,6 +741,7 @@ struct MANGOS_DLL_DECL npc_apothecary_hanesAI : public npc_escortAI
                     DoScriptText(SAY_ESCORT_COMPLETED, m_creature, pPlayer);
                     pPlayer->AreaExploredOrEventHappens(QUEST_TRIAL_OF_FIRE);
                 }
+                break;
         }
     }
 

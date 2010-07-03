@@ -2,7 +2,7 @@
 -- Cell door lever
 DELETE FROM gameobject WHERE id = 181982;
 INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`) VALUES
-('200120','181982','542','1','1','457.571','59.8315','9.61514','3.08808','0','0','0.999642','0.0267514','86400','0','1');
+('200120','181982','542','3','1','457.571','59.8315','9.61514','3.08808','0','0','0.999642','0.0267514','86400','0','1');
 
 UPDATE gameobject_template SET ScriptName = 'go_cell_door_lever' WHERE entry = 181982;
 
