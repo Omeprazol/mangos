@@ -177,6 +177,7 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
 		
         // gothik
         std::list<uint64> lGothikDeathAdds;
+        std::list<uint64> lGothikLiveAdds;
 
         // ravozious
         std::list<uint64> lUnderstudyGUID;
@@ -186,6 +187,7 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
         Creature* GetClosestAnchorForGoth(Creature* pSource, bool bRightSide);
         void GetGothSummonPointCreatures(std::list<Creature*> &lList, bool bRightSide);
         bool IsInRightSideGothArea(Unit* pUnit);
+        Unit* SelectRandomTargetOnSide(bool bRight, const WorldObject & object);
 
         // kel
         void SetChamberCenterCoords(float fX, float fY, float fZ);

@@ -106,7 +106,7 @@ void instance_naxxramas::OnCreatureCreate(Creature* pCreature)
         case NPC_RIVENDARE:         m_uiRivendareGUID = pCreature->GetGUID();       break;
         case NPC_HORSEMEN_TAP_LIST: m_uiHorsemenTapListGUID = pCreature->GetGUID(); break;
         case NPC_GOTHIK:            m_uiGothikGUID = pCreature->GetGUID();          break;
-        case NPC_KELTHUZAD:         m_uiKelthuzadGUID = pCreature->GetGUID();   break;
+        case NPC_KELTHUZAD:         m_uiKelthuzadGUID = pCreature->GetGUID();       break;
         case NPC_SUB_BOSS_TRIGGER:  m_lGothTriggerList.push_back(pCreature->GetGUID()); break;
         case NPC_NAXXRAMAS_FOLLOWER:
         case NPC_NAXXRAMAS_WORSHIPPER:
@@ -689,6 +689,31 @@ bool instance_naxxramas::IsInRightSideGothArea(Unit* pUnit)
 
     error_log("SD2: left/right side check, Gothik combat area failed.");
     return true;
+}
+
+Unit* instance_naxxramas::SelectRandomTargetOnSide(bool bRight, const WorldObject & object)
+{
+    Map::PlayerList const& lPlayers = instance->GetPlayers();
+    std::list<uint64> lTargets;
+
+    if (lPlayers.isEmpty() )
+        return NULL;
+
+    for (Map::PlayerList::const_iterator itr = lPlayers.begin(); itr != lPlayers.end(); ++itr)
+        if (Player* pPlayer = itr->getSource() )
+            if ( (IsInRightSideGothArea(pPlayer) && bRight) || (!IsInRightSideGothArea(pPlayer) && !bRight) )
+                lTargets.push_back(pPlayer->GetGUID() );
+
+    // choose random player from those on the Gothik's right side
+    if (lTargets.empty() )
+        return NULL;
+
+    std::list<uint64>::iterator itrGUID = lTargets.begin();
+    advance(itrGUID, (rand()%lTargets.size()) );
+    if (Unit* pTarget = Unit::GetUnit(object, *itrGUID))
+        return pTarget;
+
+    return NULL;
 }
 
 void instance_naxxramas::SetChamberCenterCoords(float fX, float fY, float fZ)

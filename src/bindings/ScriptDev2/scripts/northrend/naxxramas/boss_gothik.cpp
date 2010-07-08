@@ -106,9 +106,8 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
         m_uiTeleportTimer = 15000;
         m_uiShadowboltTimer = 2500;
         m_uiHarvestsoulTimer = 15000;
-		
-        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-        DespawnDeathAdds();
+
+        DespawnAdds();
     }
 
     void Aggro(Unit* pWho)
@@ -196,14 +195,15 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
 
             if(Creature* pAdds = m_creature->SummonCreature(uiSummonEntry, (*itr)->GetPositionX(), (*itr)->GetPositionY(), (*itr)->GetPositionZ(), (*itr)->GetOrientation(), TEMPSUMMON_CORPSE_TIMED_DESPAWN, 15000))
             {
-                if(Unit* pPlayer = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0))
-                    pAdds->AI()->AttackStart(pPlayer);
+                m_pInstance->lGothikLiveAdds.push_back(pAdds->GetGUID() );
+                if (Unit* pVictim = m_pInstance->SelectRandomTargetOnSide(true, *pAdds) )
+                    pAdds->AI()->AttackStart(pVictim);
                 --uiCount;
             }
         }
     }
 
-    void DespawnDeathAdds()
+    void DespawnAdds()
     {
         if (m_pInstance->lGothikDeathAdds.empty())
             return;
@@ -215,6 +215,14 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
                 pDeathAdds->ForcedDespawn(20000);
         }
         m_pInstance->lGothikDeathAdds.clear();
+        
+        for(std::list<uint64>::iterator itr = m_pInstance->lGothikLiveAdds.begin(); itr != m_pInstance->lGothikLiveAdds.end(); ++itr) 
+        {
+            Creature* pLiveAdds = m_pInstance->instance->GetCreature((*itr));
+            if (pLiveAdds && pLiveAdds->isAlive())
+                pLiveAdds->ForcedDespawn(20000);
+        }
+        m_pInstance->lGothikLiveAdds.clear();
     }
 
     void SummonedCreatureJustDied(Creature* pSummoned)
@@ -325,17 +333,21 @@ struct MANGOS_DLL_DECL boss_gothikAI : public ScriptedAI
                 {
                     if (m_creature->GetHealthPercent() < 30.0f)
                     {
-                        if (m_pInstance->IsInRightSideGothArea(m_creature))
-                        {
-                            DoScriptText(EMOTE_GATE, m_creature);
-                            m_pInstance->SetData(TYPE_GOTHIK, SPECIAL);
-                            m_uiPhase = PHASE_END;
-                            m_uiShadowboltTimer = 2000;
-                            for (std::list<uint64>::iterator itr = m_pInstance->lGothikDeathAdds.begin(); itr != m_pInstance->lGothikDeathAdds.end(); itr++)
-                                if (Creature* pCreature = m_pInstance->instance->GetCreature(*itr) )
+                        DoScriptText(EMOTE_GATE, m_creature);
+                        m_pInstance->SetData(TYPE_GOTHIK, SPECIAL);
+                        m_uiPhase = PHASE_END;
+                        m_uiShadowboltTimer = 2000;
+                        // all out of combat summons from Death Side storm the raid at once
+                        for (std::list<uint64>::iterator itr = m_pInstance->lGothikDeathAdds.begin(); itr != m_pInstance->lGothikDeathAdds.end(); itr++)
+                            if (Creature* pCreature = m_pInstance->instance->GetCreature(*itr) )
+                                if (pCreature->isAlive() && !pCreature->getVictim() )
                                     pCreature->AI()->AttackStart(m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0) );
-                            return;
-                        }
+                        // all out of combat summons from Live Side storm the raid at once
+                        for (std::list<uint64>::iterator itr = m_pInstance->lGothikLiveAdds.begin(); itr != m_pInstance->lGothikLiveAdds.end(); itr++)
+                            if (Creature* pCreature = m_pInstance->instance->GetCreature(*itr) )
+                                if (pCreature->isAlive() && !pCreature->getVictim() )
+                                    pCreature->AI()->AttackStart(m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0) );
+                        return;
                     }
 
                     if (m_uiTeleportTimer < uiDiff)
@@ -454,20 +466,18 @@ bool EffectDummyCreature_spell_anchor(Unit* pCaster, uint32 uiSpellId, SpellEffe
 
                 if(Creature* pDeathAdds = pGoth->SummonCreature(uiNpcEntry, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_CORPSE_TIMED_DESPAWN, 20000))
                 {
-                    pInstance->lGothikDeathAdds.push_back(pDeathAdds->GetGUID());
-                    if(Unit* pPlayer = pDeathAdds->SelectRandomUnfriendlyTarget(0, 20.0f))
-                        if (pPlayer->GetTypeId() == TYPEID_PLAYER)
-                            pDeathAdds->AI()->AttackStart(pPlayer);
+                    pInstance->lGothikDeathAdds.push_back(pDeathAdds->GetGUID() );
+                    if(Unit* pVictim = pInstance->SelectRandomTargetOnSide(false, *pDeathAdds) )
+                        pDeathAdds->AI()->AttackStart(pVictim);
                 }
 
                 if (uiNpcEntry == NPC_SPECT_RIDER)
                 {
                     if(Creature* pDeathSpecial = pGoth->SummonCreature(NPC_SPECT_HORSE, pCreatureTarget->GetPositionX(), pCreatureTarget->GetPositionY(), pCreatureTarget->GetPositionZ(), pCreatureTarget->GetOrientation(), TEMPSUMMON_CORPSE_TIMED_DESPAWN, 20000))
                     {
-                        pInstance->lGothikDeathAdds.push_back(pDeathSpecial->GetGUID());
-                        if(Unit* pPlayer = pDeathSpecial->SelectRandomUnfriendlyTarget(0, 20.0f))
-                            if (pPlayer->GetTypeId() == TYPEID_PLAYER)
-                                pDeathSpecial->AI()->AttackStart(pPlayer);
+                        pInstance->lGothikDeathAdds.push_back(pDeathSpecial->GetGUID() );
+                        if(Unit* pVictim = pInstance->SelectRandomTargetOnSide(false, *pDeathSpecial) )
+                            pDeathSpecial->AI()->AttackStart(pVictim);
                     }
                 }
             }
