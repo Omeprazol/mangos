@@ -15,11 +15,11 @@ unit_flags=unit_flags|256,
 AIName='EventAI' 
 WHERE entry=24381;
 UPDATE creature_template SET unit_flags=unit_flags|256|33554432
-WHERE entry=24385
+WHERE entry=24385;
 
 DELETE FROM creature_ai_texts WHERE entry IN (-243811,-243812,-243813,-243814);
 INSERT INTO creature_ai_texts (entry,content_default,type,comment) VALUES
-(-243811,'Arise from th earth, my brothers!',0,'Image of Megalith say1'),
+(-243811,'Arise from the earth, my brothers!',0,'Image of Megalith say1'),
 (-243812,'Our iron masters have a mission for us!',0,'Image of Megalith say2'),
 (-243813,'Follow me into the mountains to carry out the plan of the masters!',0,'Image of Megalith say3'),
 (-243814,'We will not fail!',0,'Image of Megalith say4');
